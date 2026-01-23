@@ -1,0 +1,39 @@
+# Build output
+build/bin/
+
+# Database
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Wails
+frontend/dist/
+frontend/wailsjs/
+
+# Node
+frontend/node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Crush AI tool
+.crush.json

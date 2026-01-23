@@ -1,0 +1,284 @@
+<template>
+  <div class="h-screen flex flex-col" :class="effectiveTheme === 'dark' ? 'dark' : ''">
+    <!-- Title Bar -->
+    <TitleBar />
+    
+    <!-- Tab Bar -->
+    <TabBar />
+    
+    <!-- Main Content -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- Sidebar -->
+      <Sidebar v-if="appState.sidebarOpen" />
+      
+      <!-- Main Panel -->
+      <div class="flex-1 flex overflow-hidden" :class="appState.layoutDirection === 'vertical' ? 'flex-col' : 'flex-row'">
+        <!-- Request Panel -->
+        <RequestPanel class="flex-1 min-w-0 min-h-0" />
+        
+        <!-- Resizer -->
+        <div 
+          class="resizer"
+          :class="appState.layoutDirection === 'vertical' ? 'resizer-horizontal' : 'resizer-vertical'"
+          @mousedown="startResize"
+        />
+        
+        <!-- Response Panel -->
+        <ResponsePanel class="flex-1 min-w-0 min-h-0" />
+      </div>
+    </div>
+    
+    <!-- Toasts -->
+    <ToastContainer />
+    
+    <!-- Modals -->
+    <ModalContainer />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref, computed, watch } from 'vue'
+import { useAppStateStore } from '@/stores/appState'
+import { useTabsStore } from '@/stores/tabs'
+import { useCollectionStore } from '@/stores/collection'
+import { useEnvironmentStore } from '@/stores/environment'
+import { useHistoryStore } from '@/stores/history'
+import { api } from '@/services/api'
+import { emitKeyboardAction } from '@/composables/useKeyboardActions'
+import TitleBar from '@/components/TitleBar.vue'
+import TabBar from '@/components/tabs/TabBar.vue'
+import Sidebar from '@/components/sidebar/Sidebar.vue'
+import RequestPanel from '@/components/request/RequestPanel.vue'
+import ResponsePanel from '@/components/response/ResponsePanel.vue'
+import ToastContainer from '@/components/common/ToastContainer.vue'
+import ModalContainer from '@/components/modals/ModalContainer.vue'
+
+const appState = useAppStateStore()
+const tabsStore = useTabsStore()
+const collectionStore = useCollectionStore()
+const environmentStore = useEnvironmentStore()
+const historyStore = useHistoryStore()
+
+const effectiveTheme = computed(() => appState.effectiveTheme)
+
+// Resize handling
+const isResizing = ref(false)
+
+function startResize(e: MouseEvent) {
+  isResizing.value = true
+  document.addEventListener('mousemove', onResize)
+  document.addEventListener('mouseup', stopResize)
+}
+
+function onResize(e: MouseEvent) {
+  if (!isResizing.value) return
+  
+  const container = document.querySelector('.flex-1.flex.overflow-hidden') as HTMLElement
+  if (!container) return
+  
+  const rect = container.getBoundingClientRect()
+  
+  if (appState.layoutDirection === 'horizontal') {
+    const ratio = ((e.clientX - rect.left) / rect.width) * 100
+    appState.splitRatio = Math.max(20, Math.min(80, ratio))
+  } else {
+    const ratio = ((e.clientY - rect.top) / rect.height) * 100
+    appState.splitRatio = Math.max(20, Math.min(80, ratio))
+  }
+}
+
+function stopResize() {
+  isResizing.value = false
+  document.removeEventListener('mousemove', onResize)
+  document.removeEventListener('mouseup', stopResize)
+}
+
+// Keyboard shortcuts
+function handleKeydown(e: KeyboardEvent) {
+  // Ctrl+B - Toggle sidebar
+  if (e.ctrlKey && e.key === 'b') {
+    e.preventDefault()
+    appState.toggleSidebar()
+  }
+  
+  // Ctrl+\ - Toggle layout direction
+  if (e.ctrlKey && e.key === '\\') {
+    e.preventDefault()
+    appState.toggleLayoutDirection()
+  }
+  
+  // Ctrl+T - New tab
+  if (e.ctrlKey && e.key === 't') {
+    e.preventDefault()
+    tabsStore.addTab()
+  }
+  
+  // Ctrl+W - Close tab
+  if (e.ctrlKey && e.key === 'w') {
+    e.preventDefault()
+    if (tabsStore.activeTabId) {
+      tabsStore.closeTab(tabsStore.activeTabId)
+    }
+  }
+  
+  // Ctrl+S - Save request
+  if (e.ctrlKey && e.key === 's') {
+    e.preventDefault()
+    emitKeyboardAction('save')
+  }
+  
+  // Ctrl+Enter - Send request
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault()
+    emitKeyboardAction('send')
+  }
+}
+
+// Load all data from backend
+async function loadData() {
+  try {
+    // Load app state and sidebar state
+    const [state, sidebarStates] = await Promise.all([
+      api.getAppState(),
+      api.getSidebarState(),
+    ])
+    appState.loadState(state, sidebarStates)
+
+    // Load collections, environments, history in parallel
+    const [tree, envs, globalVars, history] = await Promise.all([
+      api.getCollectionTree(),
+      api.getEnvironments(),
+      api.getGlobalVariables(),
+      api.getHistory(),
+    ])
+
+    collectionStore.setTree(tree)
+    environmentStore.setEnvironments(envs)
+    environmentStore.setGlobalVariables(globalVars)
+    environmentStore.setActiveEnv(state.activeEnvId)
+    historyStore.setHistory(history)
+
+    // Load tab sessions
+    const sessions = await api.getTabSessions()
+    if (sessions.length > 0) {
+      const tabs = sessions.map(s => ({
+        id: s.tabId,
+        requestId: s.requestId,
+        title: s.title,
+        method: s.method,
+        url: s.url,
+        headers: s.headers,
+        params: s.params,
+        body: s.body,
+        bodyType: s.bodyType,
+        isDirty: s.isDirty,
+        isPreview: false,
+      }))
+      tabsStore.init(tabs)
+      const activeSession = sessions.find(s => s.isActive)
+      if (activeSession) {
+        tabsStore.setActiveTab(activeSession.tabId)
+      }
+    } else {
+      tabsStore.init()
+    }
+  } catch (error) {
+    console.error('Failed to load data:', error)
+    // Initialize with defaults on error
+    tabsStore.init()
+  }
+}
+
+// Save app state periodically and on changes
+let saveTimeout: number | null = null
+function debouncedSave() {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout)
+  }
+  saveTimeout = window.setTimeout(async () => {
+    try {
+      await api.updateAppState(appState.getStateForSave())
+    } catch (error) {
+      console.error('Failed to save app state:', error)
+    }
+  }, 1000)
+}
+
+// Watch for state changes
+watch(
+  () => [
+    appState.sidebarOpen,
+    appState.sidebarWidth,
+    appState.layoutDirection,
+    appState.splitRatio,
+    appState.theme,
+    appState.activeEnvId,
+  ],
+  () => {
+    debouncedSave()
+  },
+  { deep: true }
+)
+
+// Watch for active tab changes to sync with sidebar
+watch(
+  () => tabsStore.activeTab,
+  (tab) => {
+    if (!tab || !tab.requestId || !appState.autoLocateSidebar) return
+    
+    // Find the request path and expand parents
+    const path = collectionStore.findRequestPath(tab.requestId)
+    if (path) {
+      appState.setSidebarItemExpanded('collection', path.collectionId, true)
+      if (path.folderId) {
+        appState.setSidebarItemExpanded('folder', path.folderId, true)
+      }
+      appState.highlightedRequestId = tab.requestId
+    }
+  },
+  { immediate: true }
+)
+
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown)
+  loadData()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
+  if (saveTimeout) {
+    clearTimeout(saveTimeout)
+  }
+})
+</script>
+
+<style scoped>
+.resizer {
+  flex-shrink: 0;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.resizer:hover {
+  background: rgb(var(--color-accent));
+}
+
+.resizer-vertical {
+  width: 4px;
+  cursor: col-resize;
+}
+
+.resizer-horizontal {
+  height: 4px;
+  cursor: row-resize;
+}
+
+.dark {
+  --color-bg-base: 26 26 26;
+  --color-bg-surface: 38 38 38;
+  --color-bg-elevated: 51 51 51;
+  --color-text-primary: 245 245 245;
+  --color-text-secondary: 163 163 163;
+  --color-border: 64 64 64;
+}
+</style>
