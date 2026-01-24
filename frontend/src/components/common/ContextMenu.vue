@@ -60,9 +60,32 @@ const isOpen = ref(false)
 const position = ref({ x: 0, y: 0 })
 const menuRef = ref<HTMLElement | null>(null)
 
+// Unique ID for this menu instance
+const menuId = `context-menu-${Math.random().toString(36).substr(2, 9)}`
+
+// Listen for global close event
+function handleGlobalClose(event: CustomEvent) {
+  if (event.detail !== menuId) {
+    close()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('context-menu-open', handleGlobalClose as EventListener)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('context-menu-open', handleGlobalClose as EventListener)
+  document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('keydown', handleEscape)
+})
+
 function open(event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
+  
+  // Dispatch global event to close other menus
+  window.dispatchEvent(new CustomEvent('context-menu-open', { detail: menuId }))
   
   // Calculate position, keeping menu within viewport
   let x = event.clientX
@@ -107,9 +130,11 @@ watch(isOpen, (open) => {
   if (open) {
     document.addEventListener('click', handleClickOutside)
     document.addEventListener('keydown', handleEscape)
+    document.addEventListener('contextmenu', handleClickOutside)
   } else {
     document.removeEventListener('click', handleClickOutside)
     document.removeEventListener('keydown', handleEscape)
+    document.removeEventListener('contextmenu', handleClickOutside)
   }
 })
 

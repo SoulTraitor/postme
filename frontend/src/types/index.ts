@@ -5,6 +5,7 @@ export interface KeyValue {
   key: string
   value: string
   enabled: boolean
+  type?: 'text' | 'file'  // for form-data, file type means value is a file path
 }
 
 // Variable for environments
@@ -108,6 +109,8 @@ export interface AppState {
   activeEnvId: number | null
   requestTimeout: number
   autoLocateSidebar: boolean
+  useSystemProxy: boolean
+  requestPanelTab: 'params' | 'headers' | 'body'
   updatedAt: string
 }
 

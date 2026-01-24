@@ -3,28 +3,37 @@
     <!-- Title Bar -->
     <TitleBar />
     
-    <!-- Tab Bar -->
-    <TabBar />
-    
     <!-- Main Content -->
     <div class="flex-1 flex overflow-hidden">
       <!-- Sidebar -->
       <Sidebar v-if="appState.sidebarOpen" />
       
-      <!-- Main Panel -->
-      <div class="flex-1 flex overflow-hidden" :class="appState.layoutDirection === 'vertical' ? 'flex-col' : 'flex-row'">
-        <!-- Request Panel -->
-        <RequestPanel class="flex-1 min-w-0 min-h-0" />
+      <!-- Right section with tabs and panels -->
+      <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+        <!-- Tab Bar -->
+        <TabBar />
         
-        <!-- Resizer -->
+        <!-- Main Panel -->
         <div 
-          class="resizer"
-          :class="appState.layoutDirection === 'vertical' ? 'resizer-horizontal' : 'resizer-vertical'"
-          @mousedown="startResize"
-        />
-        
-        <!-- Response Panel -->
-        <ResponsePanel class="flex-1 min-w-0 min-h-0" />
+          class="flex-1 flex overflow-hidden"
+          :class="[
+            appState.layoutDirection === 'vertical' ? 'flex-col' : 'flex-row',
+            effectiveTheme === 'dark' ? 'bg-dark-border' : 'bg-light-border'
+          ]"
+        >
+          <!-- Request Panel -->
+          <RequestPanel class="flex-1 min-w-0 min-h-0" />
+          
+          <!-- Resizer -->
+          <div 
+            class="resizer"
+            :class="appState.layoutDirection === 'vertical' ? 'resizer-horizontal' : 'resizer-vertical'"
+            @mousedown="startResize"
+          />
+          
+          <!-- Response Panel -->
+          <ResponsePanel class="flex-1 min-w-0 min-h-0" />
+        </div>
       </div>
     </div>
     
@@ -117,7 +126,7 @@ function handleKeydown(e: KeyboardEvent) {
   if (e.ctrlKey && e.key === 'w') {
     e.preventDefault()
     if (tabsStore.activeTabId) {
-      tabsStore.closeTab(tabsStore.activeTabId)
+      closeActiveTabWithConfirmation()
     }
   }
   
@@ -134,6 +143,28 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
+// Close active tab with unsaved changes confirmation
+async function closeActiveTabWithConfirmation() {
+  const tab = tabsStore.activeTab
+  if (!tab) return
+  
+  if (tab.isDirty) {
+    const modal = (window as any).$modal
+    if (modal) {
+      const confirmed = await modal.confirm({
+        title: 'Unsaved Changes',
+        message: 'This tab has unsaved changes. Are you sure you want to close it?',
+        confirmText: 'Close Without Saving',
+        danger: true,
+      })
+      
+      if (!confirmed) return
+    }
+  }
+  
+  tabsStore.closeTab(tab.id)
+}
+
 // Load all data from backend
 async function loadData() {
   try {
@@ -143,6 +174,9 @@ async function loadData() {
       api.getSidebarState(),
     ])
     appState.loadState(state, sidebarStates)
+    
+    // Apply system proxy setting to HTTP client
+    await api.setUseSystemProxy(state.useSystemProxy)
 
     // Load collections, environments, history in parallel
     const [tree, envs, globalVars, history] = await Promise.all([
@@ -161,18 +195,49 @@ async function loadData() {
     // Load tab sessions
     const sessions = await api.getTabSessions()
     if (sessions.length > 0) {
-      const tabs = sessions.map(s => ({
-        id: s.tabId,
-        requestId: s.requestId,
-        title: s.title,
-        method: s.method,
-        url: s.url,
-        headers: s.headers,
-        params: s.params,
-        body: s.body,
-        bodyType: s.bodyType,
-        isDirty: s.isDirty,
-        isPreview: false,
+      // Build tabs with original state from DB if dirty
+      const tabs = await Promise.all(sessions.map(async s => {
+        let originalState = null
+        
+        if (s.requestId) {
+          // Fetch original state from DB for this request
+          try {
+            const originalRequest = await api.getRequest(s.requestId)
+            originalState = {
+              method: originalRequest.method,
+              url: originalRequest.url,
+              headers: [...originalRequest.headers],
+              params: [...originalRequest.params],
+              body: originalRequest.body,
+              bodyType: originalRequest.bodyType,
+            }
+          } catch {
+            // Request might have been deleted, use session data as original
+            originalState = {
+              method: s.method,
+              url: s.url,
+              headers: [...s.headers],
+              params: [...s.params],
+              body: s.body,
+              bodyType: s.bodyType,
+            }
+          }
+        }
+        
+        return {
+          id: s.tabId,
+          requestId: s.requestId,
+          title: s.title,
+          method: s.method,
+          url: s.url,
+          headers: s.headers,
+          params: s.params,
+          body: s.body,
+          bodyType: s.bodyType,
+          isDirty: s.isDirty,
+          isPreview: false,
+          originalState,
+        }
       }))
       tabsStore.init(tabs)
       const activeSession = sessions.find(s => s.isActive)
@@ -213,6 +278,7 @@ watch(
     appState.splitRatio,
     appState.theme,
     appState.activeEnvId,
+    appState.requestPanelTab,
   ],
   () => {
     debouncedSave()
@@ -222,32 +288,160 @@ watch(
 
 // Watch for active tab changes to sync with sidebar
 watch(
-  () => tabsStore.activeTab,
-  (tab) => {
-    if (!tab || !tab.requestId || !appState.autoLocateSidebar) return
+  () => tabsStore.activeTabId,
+  () => {
+    const tab = tabsStore.activeTab
+    if (!tab) {
+      appState.highlightedRequestId = null
+      return
+    }
     
-    // Find the request path and expand parents
-    const path = collectionStore.findRequestPath(tab.requestId)
-    if (path) {
-      appState.setSidebarItemExpanded('collection', path.collectionId, true)
-      if (path.folderId) {
-        appState.setSidebarItemExpanded('folder', path.folderId, true)
+    if (!tab.requestId) {
+      // New unsaved request, no highlight
+      appState.highlightedRequestId = null
+      return
+    }
+    
+    // Always update highlighted request id when switching tabs
+    appState.highlightedRequestId = tab.requestId
+    
+    // If auto-locate is enabled, also expand parents
+    if (appState.autoLocateSidebar) {
+      const path = collectionStore.findRequestPath(tab.requestId)
+      if (path) {
+        appState.setSidebarItemExpanded('collection', path.collectionId, true)
+        if (path.folderId) {
+          appState.setSidebarItemExpanded('folder', path.folderId, true)
+        }
       }
-      appState.highlightedRequestId = tab.requestId
     }
   },
   { immediate: true }
 )
 
+// Save tab sessions periodically and on changes
+let tabSaveTimeout: number | null = null
+function debouncedSaveTabSessions() {
+  if (tabSaveTimeout) {
+    clearTimeout(tabSaveTimeout)
+  }
+  tabSaveTimeout = window.setTimeout(async () => {
+    try {
+      // Clear existing sessions first
+      await api.clearTabSessions()
+      
+      // Save all current tabs
+      for (let i = 0; i < tabsStore.tabs.length; i++) {
+        const tab = tabsStore.tabs[i]
+        await api.saveTabSession({
+          tabId: tab.id,
+          requestId: tab.requestId ?? undefined,
+          title: tab.title,
+          sortOrder: i,
+          isActive: tab.id === tabsStore.activeTabId,
+          isDirty: tab.isDirty,
+          method: tab.method,
+          url: tab.url,
+          headers: tab.headers,
+          params: tab.params,
+          body: tab.body,
+          bodyType: tab.bodyType,
+        })
+      }
+    } catch (error) {
+      console.error('Failed to save tab sessions:', error)
+    }
+  }, 500)
+}
+
+// Watch for tab changes to save sessions
+watch(
+  () => [tabsStore.tabs, tabsStore.activeTabId],
+  () => {
+    debouncedSaveTabSessions()
+  },
+  { deep: true }
+)
+
+// Track window state changes
+async function updateWindowState() {
+  try {
+    // @ts-ignore - Wails runtime
+    if (window.runtime) {
+      // @ts-ignore
+      const isMax = await window.runtime.WindowIsMaximised()
+      appState.windowMaximized = isMax
+      
+      if (!isMax) {
+        // Only save size/position when not maximized
+        // @ts-ignore
+        const size = await window.runtime.WindowGetSize()
+        // @ts-ignore
+        const pos = await window.runtime.WindowGetPosition()
+        
+        appState.windowWidth = size.w
+        appState.windowHeight = size.h
+        appState.windowX = pos.x
+        appState.windowY = pos.y
+      }
+      
+      debouncedSave()
+    }
+  } catch (error) {
+    console.error('Failed to get window state:', error)
+  }
+}
+
+// Debounced window resize handler
+let resizeTimeout: number | null = null
+function handleWindowResize() {
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
+  }
+  resizeTimeout = window.setTimeout(() => {
+    updateWindowState()
+  }, 500)
+}
+
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
   loadData()
+  
+  // Set up window state tracking
+  // @ts-ignore - Wails runtime
+  if (window.runtime && window.runtime.EventsOn) {
+    // @ts-ignore
+    window.runtime.EventsOn('wails:window-maximised', () => {
+      appState.windowMaximized = true
+      debouncedSave()
+    })
+    // @ts-ignore
+    window.runtime.EventsOn('wails:window-restored', () => {
+      appState.windowMaximized = false
+      updateWindowState()
+    })
+    // @ts-ignore
+    window.runtime.EventsOn('wails:window-unmaximised', () => {
+      appState.windowMaximized = false
+      updateWindowState()
+    })
+  }
+  
+  // Track resize events
+  window.addEventListener('resize', handleWindowResize)
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', handleWindowResize)
   if (saveTimeout) {
     clearTimeout(saveTimeout)
+  }
+  if (tabSaveTimeout) {
+    clearTimeout(tabSaveTimeout)
+  }
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout)
   }
 })
 </script>

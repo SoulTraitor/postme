@@ -2,7 +2,7 @@
   <Teleport to="body">
     <!-- Confirm Modal -->
     <TransitionRoot :show="confirmModal.open" as="template">
-      <Dialog as="div" class="relative z-50" @close="confirmModal.open = false">
+      <Dialog as="div" class="relative z-[60]" @close="confirmModal.onCancel?.()">
         <TransitionChild
           enter="ease-out duration-200"
           enter-from="opacity-0"
@@ -68,7 +68,7 @@
     
     <!-- Input Modal -->
     <TransitionRoot :show="inputModal.open" as="template">
-      <Dialog as="div" class="relative z-50" @close="inputModal.open = false">
+      <Dialog as="div" class="relative z-[60]" @close="inputModal.onCancel?.()">
         <TransitionChild
           enter="ease-out duration-200"
           enter-from="opacity-0"
@@ -138,7 +138,7 @@
     
     <!-- Select Modal -->
     <TransitionRoot :show="selectModal.open" as="template">
-      <Dialog as="div" class="relative z-50" @close="selectModal.open = false">
+      <Dialog as="div" class="relative z-[60]" @close="selectModal.onCancel?.()">
         <TransitionChild
           enter="ease-out duration-200"
           enter-from="opacity-0"

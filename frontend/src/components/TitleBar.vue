@@ -6,13 +6,14 @@
         ? 'bg-dark-surface border-dark-border text-white' 
         : 'bg-light-surface border-light-border text-gray-900'
     ]"
+    @dblclick="onTitleBarDblClick"
   >
     <!-- Left section -->
     <div class="flex items-center gap-2">
       <!-- Sidebar toggle -->
       <button
         @click="appState.toggleSidebar"
-        class="p-1.5 rounded-md transition-colors"
+        class="p-1.5 rounded-md transition-colors wails-no-drag"
         :class="effectiveTheme === 'dark' ? 'hover:bg-dark-hover' : 'hover:bg-light-hover'"
         title="Toggle sidebar (Ctrl+B)"
       >
@@ -31,7 +32,7 @@
       <!-- Theme toggle (light/dark only, system available in Settings) -->
       <button
         @click="appState.toggleTheme"
-        class="p-1.5 rounded-md transition-colors"
+        class="p-1.5 rounded-md transition-colors wails-no-drag"
         :class="effectiveTheme === 'dark' ? 'hover:bg-dark-hover' : 'hover:bg-light-hover'"
         :title="themeTooltip"
       >
@@ -42,7 +43,7 @@
       <!-- Settings -->
       <button
         @click="openSettings"
-        class="p-1.5 rounded-md transition-colors"
+        class="p-1.5 rounded-md transition-colors wails-no-drag"
         :class="effectiveTheme === 'dark' ? 'hover:bg-dark-hover' : 'hover:bg-light-hover'"
         title="Settings"
       >
@@ -50,7 +51,7 @@
       </button>
       
       <!-- Window controls (for custom title bar) -->
-      <div class="flex items-center ml-4 -mr-3">
+      <div class="flex items-center ml-4 -mr-3 wails-no-drag">
         <button
           @click="minimizeWindow"
           class="w-10 h-10 flex items-center justify-center hover:bg-gray-500/20"
@@ -126,6 +127,8 @@ function maximizeWindow() {
   // @ts-ignore - Wails runtime
   if (window.runtime) {
     window.runtime.WindowToggleMaximise()
+    // Toggle the local state immediately
+    isMaximized.value = !isMaximized.value
   }
 }
 
@@ -136,22 +139,42 @@ function closeWindow() {
   }
 }
 
+function onTitleBarDblClick(e: MouseEvent) {
+  // Only toggle maximize if clicking on the drag area (not buttons)
+  const target = e.target as HTMLElement
+  if (target.closest('.wails-no-drag')) {
+    return
+  }
+  maximizeWindow()
+}
+
 // Listen for window state changes
-onMounted(() => {
-  // @ts-ignore - Wails runtime events
-  if (window.runtime && window.runtime.EventsOn) {
-    // @ts-ignore
-    window.runtime.EventsOn('wails:window-maximised', () => {
-      isMaximized.value = true
-    })
-    // @ts-ignore
-    window.runtime.EventsOn('wails:window-restored', () => {
-      isMaximized.value = false
-    })
-    // @ts-ignore
-    window.runtime.EventsOn('wails:window-unmaximised', () => {
-      isMaximized.value = false
-    })
+onMounted(async () => {
+  // @ts-ignore - Wails runtime
+  if (window.runtime) {
+    // Check initial maximized state
+    try {
+      // @ts-ignore
+      isMaximized.value = await window.runtime.WindowIsMaximised()
+    } catch {
+      // Ignore if not available
+    }
+    
+    // @ts-ignore - Wails runtime events
+    if (window.runtime.EventsOn) {
+      // @ts-ignore
+      window.runtime.EventsOn('wails:window-maximised', () => {
+        isMaximized.value = true
+      })
+      // @ts-ignore
+      window.runtime.EventsOn('wails:window-restored', () => {
+        isMaximized.value = false
+      })
+      // @ts-ignore
+      window.runtime.EventsOn('wails:window-unmaximised', () => {
+        isMaximized.value = false
+      })
+    }
   }
 })
 

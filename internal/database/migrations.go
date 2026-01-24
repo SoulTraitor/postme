@@ -130,12 +130,24 @@ func RunMigrations(db *sqlx.DB) error {
 
 		// Initialize global_variables with default values
 		`INSERT OR IGNORE INTO global_variables (id) VALUES (1)`,
+
 	}
 
 	for _, migration := range migrations {
 		if _, err := db.Exec(migration); err != nil {
 			return err
 		}
+	}
+
+	// Run ALTER TABLE migrations separately since they fail if column already exists
+	alterTableMigrations := []string{
+		`ALTER TABLE app_state ADD COLUMN use_system_proxy INTEGER DEFAULT 1`,
+		`ALTER TABLE app_state ADD COLUMN request_panel_tab TEXT DEFAULT 'params'`,
+	}
+
+	for _, migration := range alterTableMigrations {
+		// Ignore errors for ALTER TABLE - column may already exist
+		db.Exec(migration)
 	}
 
 	return nil

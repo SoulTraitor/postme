@@ -21,6 +21,15 @@ export const useAppStateStore = defineStore('appState', () => {
   const activeEnvId = ref<number | null>(null)
   const requestTimeout = ref(30)
   const autoLocateSidebar = ref(true)
+  const useSystemProxy = ref(true)
+  const requestPanelTab = ref<'params' | 'headers' | 'body'>('params')
+  
+  // Window state
+  const windowWidth = ref(1200)
+  const windowHeight = ref(800)
+  const windowX = ref<number | null>(null)
+  const windowY = ref<number | null>(null)
+  const windowMaximized = ref(false)
   
   // Sidebar expanded states
   const sidebarStates = ref<Map<string, boolean>>(new Map())
@@ -137,6 +146,15 @@ export const useAppStateStore = defineStore('appState', () => {
     activeEnvId.value = state.activeEnvId
     requestTimeout.value = state.requestTimeout
     autoLocateSidebar.value = state.autoLocateSidebar
+    useSystemProxy.value = state.useSystemProxy
+    requestPanelTab.value = (state.requestPanelTab as 'params' | 'headers' | 'body') || 'params'
+    
+    // Load window state
+    windowWidth.value = state.windowWidth || 1200
+    windowHeight.value = state.windowHeight || 800
+    windowX.value = state.windowX ?? null
+    windowY.value = state.windowY ?? null
+    windowMaximized.value = state.windowMaximized || false
 
     for (const item of sidebarStateList) {
       sidebarStates.value.set(`${item.itemType}-${item.itemId}`, item.expanded)
@@ -156,6 +174,13 @@ export const useAppStateStore = defineStore('appState', () => {
       activeEnvId: activeEnvId.value,
       requestTimeout: requestTimeout.value,
       autoLocateSidebar: autoLocateSidebar.value,
+      useSystemProxy: useSystemProxy.value,
+      requestPanelTab: requestPanelTab.value,
+      windowWidth: windowWidth.value,
+      windowHeight: windowHeight.value,
+      windowX: windowX.value,
+      windowY: windowY.value,
+      windowMaximized: windowMaximized.value,
     }
   }
 
@@ -168,6 +193,13 @@ export const useAppStateStore = defineStore('appState', () => {
     activeEnvId,
     requestTimeout,
     autoLocateSidebar,
+    useSystemProxy,
+    requestPanelTab,
+    windowWidth,
+    windowHeight,
+    windowX,
+    windowY,
+    windowMaximized,
     sidebarStates,
     sidebarTab,
     highlightedRequestId,

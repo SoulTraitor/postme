@@ -111,7 +111,7 @@
                 @drop="(e: DragEvent) => onDropOnRequest(e, req, 'before')"
                 @dragend="onDragEnd"
                 @click="openRequest(req)"
-                @dblclick.stop="openRequestInNewTab(req)"
+                @pin-request="openRequestInNewTab(req)"
                 @contextmenu="(e: MouseEvent) => showRequestMenu(e, req)"
               />
             </div>
@@ -130,7 +130,7 @@
             @drop="(e: DragEvent) => onDropOnRequest(e, req, 'before')"
             @dragend="onDragEnd"
             @click="openRequest(req)"
-            @dblclick.stop="openRequestInNewTab(req)"
+            @pin-request="openRequestInNewTab(req)"
             @contextmenu="(e: MouseEvent) => showRequestMenu(e, req)"
           />
         </div>
@@ -145,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { 
   MagnifyingGlassIcon, 
   PlusIcon, 
@@ -172,6 +172,11 @@ interface DragData {
   collectionId?: number
   folderId?: number | null
 }
+
+// Single-click delay to allow double-click detection in RequestItem
+let clickTimer: ReturnType<typeof setTimeout> | null = null
+let pendingClickRequest: Request | null = null
+const CLICK_DELAY = 300
 
 const appState = useAppStateStore()
 const collectionStore = useCollectionStore()
@@ -257,6 +262,12 @@ const requestMenuItems = computed<ContextMenuItem[]>(() => [
     },
   },
   {
+    id: 'duplicate',
+    label: 'Duplicate',
+    icon: DocumentDuplicateIcon,
+    action: () => duplicateRequest(),
+  },
+  {
     id: 'rename',
     label: 'Rename',
     icon: PencilIcon,
@@ -313,19 +324,52 @@ function toggleFolder(id: number) {
 }
 
 function openRequest(req: Request) {
-  tabsStore.previewRequest(
-    req.id,
-    req.name,
-    req.method,
-    req.url,
-    req.headers,
-    req.params,
-    req.body,
-    req.bodyType
-  )
+  // Delay single-click to allow double-click detection in RequestItem
+  if (clickTimer) {
+    clearTimeout(clickTimer)
+    clickTimer = null
+  }
+  pendingClickRequest = req
+  clickTimer = setTimeout(() => {
+    if (pendingClickRequest) {
+      tabsStore.previewRequest(
+        pendingClickRequest.id,
+        pendingClickRequest.name,
+        pendingClickRequest.method,
+        pendingClickRequest.url,
+        pendingClickRequest.headers,
+        pendingClickRequest.params,
+        pendingClickRequest.body,
+        pendingClickRequest.bodyType
+      )
+      appState.highlightedRequestId = pendingClickRequest.id
+      pendingClickRequest = null
+    }
+    clickTimer = null
+  }, CLICK_DELAY)
 }
 
 function openRequestInNewTab(req: Request) {
+  // Cancel pending single-click since we're pinning
+  if (clickTimer) {
+    clearTimeout(clickTimer)
+    clickTimer = null
+    pendingClickRequest = null
+  }
+  
+  // Check if already open
+  const existing = tabsStore.tabs.find(t => t.requestId === req.id)
+  if (existing) {
+    // Switch to the tab and pin it if it's a preview
+    tabsStore.setActiveTab(existing.id)
+    if (existing.isPreview) {
+      tabsStore.pinTab(existing.id)
+    }
+    appState.highlightedRequestId = req.id
+    return
+  }
+  
+  // Not opened, open as pinned (non-preview)
   tabsStore.openRequest(
     req.id,
     req.name,
@@ -336,6 +380,7 @@ function openRequestInNewTab(req: Request) {
     req.body,
     req.bodyType
   )
+  appState.highlightedRequestId = req.id
 }
 
 async function createCollection() {
@@ -604,6 +649,8 @@ async function renameRequest() {
       const updated = { ...selectedRequest.value, name: name.trim() }
       await api.updateRequest(updated)
       collectionStore.updateRequest(updated)
+      // Sync tab title
+      tabsStore.updateTabTitleByRequestId(updated.id, updated.name)
     } catch (error) {
       console.error('Failed to rename request:', error)
     }
@@ -624,11 +671,37 @@ async function deleteRequest() {
   
   if (confirmed) {
     try {
-      await api.deleteRequest(selectedRequest.value.id)
-      collectionStore.deleteRequest(selectedRequest.value.id)
+      const requestId = selectedRequest.value.id
+      await api.deleteRequest(requestId)
+      collectionStore.deleteRequest(requestId)
+      // Close the tab if it's open
+      tabsStore.closeTabByRequestId(requestId)
     } catch (error) {
       console.error('Failed to delete request:', error)
     }
+  }
+}
+
+async function duplicateRequest() {
+  if (!selectedRequest.value) return
+  
+  try {
+    const duplicated = await api.duplicateRequest(selectedRequest.value.id)
+    collectionStore.addRequest(duplicated)
+    
+    // Open the duplicated request in a new tab
+    tabsStore.openRequest(
+      duplicated.id,
+      duplicated.name,
+      duplicated.method,
+      duplicated.url,
+      duplicated.headers,
+      duplicated.params,
+      duplicated.body,
+      duplicated.bodyType
+    )
+  } catch (error) {
+    console.error('Failed to duplicate request:', error)
   }
 }
 
@@ -715,6 +788,12 @@ async function onDropOnCollection(e: DragEvent, targetCollection: Collection, po
       
       await api.reorderCollections(newOrder.map(c => c.id))
       await collectionStore.loadTree()
+    } else if (dragData.value.type === 'folder' && position === 'inside') {
+      // Move folder to another collection
+      if (dragData.value.collectionId !== targetCollection.id) {
+        await api.moveFolder(dragData.value.id, targetCollection.id)
+        await collectionStore.loadTree()
+      }
     } else if (dragData.value.type === 'request' && position === 'inside') {
       // Move request to collection root
       await api.moveRequest(dragData.value.id, targetCollection.id, null)

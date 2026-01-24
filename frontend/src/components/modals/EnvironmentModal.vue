@@ -42,7 +42,7 @@
               <div class="flex gap-4 h-96">
                 <!-- Sidebar: Environment list -->
                 <div 
-                  class="w-48 flex-shrink-0 border-r pr-4"
+                  class="w-48 flex-shrink-0 border-r pr-4 overflow-y-auto overflow-x-hidden"
                   :class="effectiveTheme === 'dark' ? 'border-dark-border' : 'border-light-border'"
                 >
                   <div class="mb-2">
@@ -98,8 +98,8 @@
                   </div>
                 </div>
                 
-                <!-- Main: Variable editor -->
-                <div class="flex-1 overflow-hidden flex flex-col">
+                  <!-- Main: Variable editor -->
+                <div class="flex-1 min-w-[500px] overflow-hidden flex flex-col">
                   <!-- Environment name (if editing an environment) -->
                   <div v-if="selectedEnvId !== null" class="mb-4">
                     <label 
@@ -131,7 +131,7 @@
                   </div>
                   
                   <!-- Variable list -->
-                  <div class="flex-1 overflow-auto">
+                  <div class="flex-1 overflow-y-scroll">
                     <table class="w-full text-sm">
                       <thead>
                         <tr class="text-left text-xs font-medium text-gray-500 uppercase">
@@ -150,9 +150,12 @@
                               placeholder="Variable name"
                               class="w-full px-2 py-1 rounded border outline-none text-sm"
                               :class="[
-                                effectiveTheme === 'dark'
-                                  ? 'bg-dark-surface border-dark-border text-white focus:border-accent'
-                                  : 'bg-white border-light-border text-gray-900 focus:border-accent'
+                                isDuplicate(variable.key)
+                                  ? 'border-red-500 focus:border-red-500'
+                                  : (effectiveTheme === 'dark'
+                                    ? 'bg-dark-surface border-dark-border text-white focus:border-accent'
+                                    : 'bg-white border-light-border text-gray-900 focus:border-accent'),
+                                effectiveTheme === 'dark' ? 'bg-dark-surface text-white' : 'bg-white text-gray-900'
                               ]"
                               @change="saveCurrentEnv"
                             />
@@ -181,7 +184,7 @@
                           </td>
                           <td class="py-2">
                             <button
-                              @click="removeVariable(index)"
+                              @click.stop="removeVariable(index, $event)"
                               class="p-1 rounded hover:bg-red-500/20 text-red-500"
                             >
                               <TrashIcon class="w-4 h-4" />
@@ -239,6 +242,9 @@ const appState = useAppStateStore()
 const envStore = useEnvironmentStore()
 
 const effectiveTheme = computed(() => appState.effectiveTheme)
+
+// Track if a nested modal (confirmation dialog) is open
+const isNestedModalOpen = ref(false)
 const environments = computed(() => envStore.environments)
 
 const selectedEnvId = ref<number | null>(null)
@@ -292,12 +298,14 @@ async function deleteEnv(id: number) {
   const env = environments.value.find(e => e.id === id)
   const envName = env?.name || 'this environment'
   
+  isNestedModalOpen.value = true
   const confirmed = await modal.confirm({
     title: 'Delete Environment',
     message: `Are you sure you want to delete "${envName}"? All variables in this environment will be lost.`,
     confirmText: 'Delete',
     danger: true,
   })
+  isNestedModalOpen.value = false
   
   if (!confirmed) return
   
@@ -316,19 +324,24 @@ function addVariable() {
   currentVariables.value.push({ key: '', value: '', secret: false })
 }
 
-async function removeVariable(index: number) {
+async function removeVariable(index: number, event?: Event) {
+  // Stop event propagation to prevent closing the parent modal
+  event?.stopPropagation()
+  
   const variable = currentVariables.value[index]
   
   // Only show confirmation if the variable has a key (non-empty)
   if (variable.key.trim()) {
     const modal = (window as any).$modal
     if (modal) {
+      isNestedModalOpen.value = true
       const confirmed = await modal.confirm({
         title: 'Delete Variable',
         message: `Are you sure you want to delete the variable "${variable.key}"?`,
         confirmText: 'Delete',
         danger: true,
       })
+      isNestedModalOpen.value = false
       
       if (!confirmed) return
     }
@@ -338,8 +351,38 @@ async function removeVariable(index: number) {
   saveCurrentEnv()
 }
 
+function getDuplicateKeys(): Set<string> {
+  const keys = currentVariables.value.map(v => v.key.trim().toLowerCase()).filter(k => k)
+  const seen = new Set<string>()
+  const duplicates = new Set<string>()
+  for (const key of keys) {
+    if (seen.has(key)) {
+      duplicates.add(key)
+    }
+    seen.add(key)
+  }
+  return duplicates
+}
+
+function isDuplicate(key: string): boolean {
+  const trimmedKey = key.trim().toLowerCase()
+  if (!trimmedKey) return false
+  const duplicates = getDuplicateKeys()
+  return duplicates.has(trimmedKey)
+}
+
 async function saveCurrentEnv() {
   try {
+    // Check for duplicate variable names
+    const duplicates = getDuplicateKeys()
+    if (duplicates.size > 0) {
+      const toast = (window as any).$toast
+      if (toast) {
+        toast.error(`Duplicate variable names: ${[...duplicates].join(', ')}`)
+      }
+      return
+    }
+    
     if (selectedEnvId.value === null) {
       // Save global variables
       const vars = currentVariables.value.filter(v => v.key.trim())
@@ -364,6 +407,8 @@ async function saveCurrentEnv() {
 }
 
 function close() {
+  // Don't close if a nested modal (confirmation dialog) is open
+  if (isNestedModalOpen.value) return
   emit('close')
 }
 </script>

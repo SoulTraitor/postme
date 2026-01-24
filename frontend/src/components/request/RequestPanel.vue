@@ -135,7 +135,10 @@ const historyStore = useHistoryStore()
 
 const effectiveTheme = computed(() => appState.effectiveTheme)
 const activeTab = computed(() => tabsStore.activeTab)
-const activeRequestTab = ref<'params' | 'headers' | 'body'>('params')
+const activeRequestTab = computed({
+  get: () => appState.requestPanelTab,
+  set: (value) => { appState.requestPanelTab = value }
+})
 const saveModalOpen = ref(false)
 
 const isLoading = computed(() => {
@@ -182,7 +185,53 @@ function updateBody(body: string) {
 
 function updateBodyType(bodyType: string) {
   if (activeTab.value) {
-    tabsStore.updateTab(activeTab.value.id, { bodyType })
+    const tab = activeTab.value
+    const currentHeaders = [...tab.headers]
+    
+    // Determine the Content-Type for this body type
+    let contentType: string | null = null
+    if (bodyType === 'json') {
+      contentType = 'application/json'
+    } else if (bodyType === 'xml') {
+      contentType = 'application/xml'
+    } else if (bodyType === 'text') {
+      contentType = 'text/plain'
+    } else if (bodyType === 'form-data') {
+      contentType = 'multipart/form-data'
+    } else if (bodyType === 'x-www-form-urlencoded') {
+      contentType = 'application/x-www-form-urlencoded'
+    }
+    
+    // Find existing Content-Type header (case-insensitive)
+    const contentTypeIndex = currentHeaders.findIndex(
+      h => h.key.toLowerCase() === 'content-type'
+    )
+    
+    if (bodyType === 'none') {
+      // Remove Content-Type if body is none
+      if (contentTypeIndex !== -1) {
+        currentHeaders.splice(contentTypeIndex, 1)
+      }
+    } else if (contentType) {
+      if (contentTypeIndex !== -1) {
+        // Update existing Content-Type header
+        currentHeaders[contentTypeIndex] = {
+          ...currentHeaders[contentTypeIndex],
+          value: contentType,
+          enabled: true,
+        }
+      } else {
+        // Add new Content-Type header at the beginning
+        currentHeaders.unshift({
+          key: 'Content-Type',
+          value: contentType,
+          enabled: true,
+        })
+      }
+    }
+    
+    // Don't clear body - preserve it to avoid accidental data loss
+    tabsStore.updateTab(tab.id, { bodyType, headers: currentHeaders })
   }
 }
 

@@ -35,21 +35,21 @@
         v-if="dragFromIndex !== null && dropTargetIndex === tabs.length"
         class="w-1 h-6 bg-accent rounded"
       />
+      
+      <!-- Add tab button -->
+      <button
+        @click="addTab"
+        class="flex-shrink-0 p-2 transition-colors"
+        :class="[
+          effectiveTheme === 'dark'
+            ? 'hover:bg-dark-hover text-gray-400 hover:text-white'
+            : 'hover:bg-light-hover text-gray-500 hover:text-gray-900'
+        ]"
+        title="New Tab (Ctrl+T)"
+      >
+        <PlusIcon class="w-4 h-4" />
+      </button>
     </div>
-    
-    <!-- Add tab button -->
-    <button
-      @click="addTab"
-      class="flex-shrink-0 p-2 transition-colors"
-      :class="[
-        effectiveTheme === 'dark'
-          ? 'hover:bg-dark-hover text-gray-400 hover:text-white'
-          : 'hover:bg-light-hover text-gray-500 hover:text-gray-900'
-      ]"
-      title="New Tab (Ctrl+T)"
-    >
-      <PlusIcon class="w-4 h-4" />
-    </button>
   </div>
 </template>
 
@@ -76,7 +76,22 @@ function setActiveTab(id: string) {
   tabsStore.setActiveTab(id)
 }
 
-function closeTab(id: string) {
+async function closeTab(id: string) {
+  const tab = tabsStore.getTab(id)
+  if (tab && tab.isDirty) {
+    const modal = (window as any).$modal
+    if (modal) {
+      const confirmed = await modal.confirm({
+        title: 'Unsaved Changes',
+        message: 'This tab has unsaved changes. Are you sure you want to close it?',
+        confirmText: 'Close Without Saving',
+        danger: true,
+      })
+      
+      if (!confirmed) return
+    }
+  }
+  
   tabsStore.closeTab(id)
 }
 

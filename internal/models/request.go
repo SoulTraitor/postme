@@ -7,6 +7,7 @@ type KeyValue struct {
 	Key     string `json:"key" db:"key"`
 	Value   string `json:"value" db:"value"`
 	Enabled bool   `json:"enabled" db:"enabled"`
+	Type    string `json:"type,omitempty" db:"type"` // "text" or "file" for form-data
 }
 
 // Request represents an HTTP request

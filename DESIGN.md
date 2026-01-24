@@ -736,6 +736,8 @@ radius-lg    12px   面板、弹窗、Tab
 - 右侧编辑选中环境的变量
 - 变量支持 Secret 模式（密码遮挡，点击眼睛图标显示）
 - 新建环境自动选中并进入编辑
+- 重复变量名检测（红色边框高亮，保存时 Toast 提示）
+- 支持全局变量（所有环境共享）
 
 ### 7.4.2 删除确认
 
@@ -988,7 +990,58 @@ function onDragOver(e: DragEvent, targetType: string, targetId: number) {
 2. 自动更新请求的 `collectionId` 和 `folderId`
 3. 自动更新排序顺序
 
-## 13. 数据库文件位置
+文件夹可以跨集合移动：
+1. 拖动文件夹到目标集合
+2. 自动更新文件夹的 `collectionId`
+3. 文件夹内的请求一同移动
+
+## 13. 请求体类型支持
+
+### 13.1 支持的 Body 类型
+
+| 类型 | Content-Type | 说明 |
+|------|--------------|------|
+| none | - | 无请求体 |
+| json | application/json | JSON 格式 |
+| xml | application/xml | XML 格式 |
+| text | text/plain | 纯文本 |
+| form-data | multipart/form-data | 表单数据，支持键值对编辑 |
+
+### 13.2 自动请求头
+
+切换 Body 类型时自动添加/更新 Content-Type 请求头：
+- 如果已存在 Content-Type 头，更新其值
+- 如果不存在，添加新的 Content-Type 头
+- 选择 none 时移除 Content-Type 头
+
+Content-Length 由 Go http.Client 自动处理，无需手动设置。
+
+### 13.3 Form-Data 编辑
+
+Form-Data 使用键值对编辑器，数据以 JSON 数组格式存储在 body 字段中：
+
+```json
+[
+  {"key": "username", "value": "admin", "enabled": true},
+  {"key": "password", "value": "123456", "enabled": true}
+]
+```
+
+发送请求时自动转换为 multipart/form-data 格式。
+
+## 14. 系统代理支持
+
+应用自动支持系统代理设置：
+
+| 环境变量 | 用途 |
+|----------|------|
+| HTTP_PROXY | HTTP 请求代理 |
+| HTTPS_PROXY | HTTPS 请求代理 |
+| NO_PROXY | 不使用代理的主机列表 |
+
+Go 的 `http.DefaultTransport` 会自动读取这些环境变量并应用代理设置。
+
+## 15. 数据库文件位置
 
 数据库文件存放在应用同级目录下，便于整体迁移：
 
@@ -1001,16 +1054,16 @@ postme/
 
 开发模式下使用当前工作目录。
 
-## 14. 请求控制
+## 16. 请求控制
 
-### 14.1 请求取消
+### 16.1 请求取消
 
 - Send 按钮在请求进行中变为 Cancel 按钮（红色）
 - 点击 Cancel 或按 ESC 取消当前请求
 - 取消后响应区显示 "请求已取消"
 - Go 后端使用 context.WithCancel 实现
 
-### 14.2 请求超时
+### 16.2 请求超时
 
 - 默认超时时间 30 秒
 - 直接输入数值，单位秒，允许小数（如 1.5）
@@ -1019,7 +1072,7 @@ postme/
 - 超时后响应区显示 "请求超时 (Xs)"
 - Go 后端使用 context.WithTimeout 实现
 
-### 14.3 响应区状态
+### 16.3 响应区状态
 
 | 状态 | 图标 | 文字 |
 |------|------|------|
@@ -1029,13 +1082,13 @@ postme/
 | 超时 | ⏱ | 请求超时 (30s) |
 | 错误 | ✕ | 连接失败 / 错误信息 |
 
-## 15. 设置功能
+## 17. 设置功能
 
-### 15.1 设置入口
+### 17.1 设置入口
 
 标题栏右侧添加设置按钮 `⚙`
 
-### 15.2 设置项
+### 17.2 设置项
 
 | 分类 | 设置项 | 类型 | 默认值 | 说明 |
 |------|--------|------|--------|------|
@@ -1043,7 +1096,7 @@ postme/
 | 界面 | 主题 | 下拉 | 跟随系统 | 亮色/暗色/跟随系统 |
 | 界面 | 切换Tab自动定位 | 开关 | 开启 | - |
 
-### 15.3 设置弹窗
+### 17.3 设置弹窗
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -1077,7 +1130,7 @@ postme/
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 15.4 数据模型
+### 17.4 数据模型
 
 ```sql
 -- app_state 表添加字段
@@ -1085,7 +1138,7 @@ ALTER TABLE app_state ADD COLUMN request_timeout REAL DEFAULT 30;
 ALTER TABLE app_state ADD COLUMN auto_locate_sidebar INTEGER DEFAULT 1;
 ```
 
-## 16. 配置常量
+## 18. 配置常量
 
 ```go
 const (
@@ -1109,4 +1162,318 @@ const (
     // 请求超时
     DefaultRequestTimeout = 30.0 // 秒，0 表示不限制，支持小数
 )
+```
+
+## 19. Tab 会话持久化
+
+应用重启时自动恢复所有打开的标签页（不包括响应数据）：
+
+### 19.1 保存时机
+
+- Tab 内容变更时自动保存（防抖 500ms）
+- Tab 列表变更时自动保存
+- 切换活动 Tab 时保存激活状态
+
+### 19.2 恢复内容
+
+| 内容 | 保存 | 说明 |
+|------|------|------|
+| Tab ID | ✓ | 唯一标识 |
+| 请求 ID | ✓ | 关联的保存请求 |
+| 标题 | ✓ | Tab 显示名称 |
+| 排序顺序 | ✓ | Tab 位置 |
+| 激活状态 | ✓ | 最后激活的 Tab |
+| 脏状态 | ✓ | 是否有未保存修改 |
+| 请求内容 | ✓ | method, url, headers, params, body, bodyType |
+| 响应数据 | ✗ | 仅内存保留 |
+
+## 20. Tab 交互增强
+
+### 20.1 双击固定 Tab
+
+- 单击侧栏请求：预览模式打开（斜体）
+- 双击侧栏请求：固定模式打开（常规样式）
+- 对于已打开的 Tab，双击切换并固定
+
+### 20.2 关闭未保存确认
+
+关闭有未保存更改的 Tab 时显示确认对话框：
+- 通过关闭按钮关闭
+- 通过 Ctrl+W 快捷键关闭
+
+### 20.3 Tab 同步
+
+- 侧栏重命名请求：Tab 标题实时更新
+- 侧栏删除请求：自动关闭对应 Tab
+- 切换 Tab：侧栏自动展开并高亮（可在设置中关闭）
+
+### 20.4 活动 Tab 高亮
+
+活动 Tab 底部显示强调色指示条（2px），在亮暗主题下都有明显的视觉区分。
+
+## 21. 系统代理支持（增强）
+
+### 21.1 Windows 系统代理读取
+
+应用可以读取 Windows 系统代理设置（Internet 选项中配置的代理）：
+
+```go
+// 从 Windows 注册表读取代理设置
+key, _ := registry.OpenKey(registry.CURRENT_USER,
+    `Software\Microsoft\Windows\CurrentVersion\Internet Settings`,
+    registry.QUERY_VALUE)
+
+proxyEnable, _, _ := key.GetIntegerValue("ProxyEnable")
+proxyServer, _, _ := key.GetStringValue("ProxyServer")
+```
+
+### 21.2 代理设置项
+
+在设置弹窗中添加代理开关：
+
+| 设置项 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| 使用系统代理 | 开关 | 开启 | 是否使用 Windows 系统代理 |
+
+### 21.3 代理优先级
+
+1. Windows 系统代理（Internet 选项）
+2. 环境变量（HTTP_PROXY, HTTPS_PROXY）
+3. 无代理
+
+## 22. Cloudflare 兼容性
+
+为避免请求被 Cloudflare 等 WAF 拦截，HTTP 客户端进行了以下优化：
+
+### 22.1 TLS 配置
+
+- 使用现代 TLS 版本（1.2-1.3）
+- 配置浏览器常用密码套件顺序
+- 设置 EC 曲线优先级
+
+### 22.2 默认请求头
+
+未设置时自动添加以下请求头：
+
+| 请求头 | 默认值 |
+|--------|--------|
+| User-Agent | Chrome 120 用户代理字符串 |
+| Accept | `*/*` |
+| Accept-Language | `en-US,en;q=0.9` |
+
+### 22.3 HTTP/2 支持
+
+启用 HTTP/2 协议支持，提高与现代服务器的兼容性。
+
+## 23. 右键菜单增强
+
+### 23.1 菜单排他性
+
+同时只能显示一个右键菜单，打开新菜单时自动关闭其他菜单。
+
+### 23.2 请求菜单项
+
+| 菜单项 | 功能 |
+|--------|------|
+| 在新标签页打开 | 打开请求到新 Tab |
+| 复制 | 复制请求（名称加 "(copy)" 后缀） |
+| 重命名 | 修改请求名称 |
+| 删除 | 删除请求（需确认） |
+
+### 23.3 复制请求功能
+
+复制后的请求：
+- 名称后添加 "(copy)" 后缀
+- 保留所有请求设置（method, url, headers, params, body）
+- 自动打开新 Tab 编辑
+
+## 24. 表单自动提交
+
+KeyValueEditor 组件（用于请求头、请求参数、表单数据）支持自动添加行：
+
+- 在新行输入内容后，焦点离开时自动添加
+- Tab 在同一行的字段间切换不会触发添加
+- 无需手动点击 "+" 按钮
+
+## 25. 数据模型更新
+
+### 25.1 app_state 表新增字段
+
+```sql
+ALTER TABLE app_state ADD COLUMN use_system_proxy INTEGER DEFAULT 1;
+```
+
+### 25.2 AppState 模型更新
+
+```go
+type AppState struct {
+    // ... 其他字段
+    UseSystemProxy bool `json:"useSystemProxy" db:"use_system_proxy"`
+}
+```
+
+## 26. 双击交互增强
+
+### 26.1 侧边栏请求双击
+
+双击侧边栏中的请求项将固定该 Tab（从预览模式转为永久模式）。
+
+实现机制：
+- 延迟单击处理（200ms）以区分单击和双击
+- 双击时取消单击定时器
+- 双击时将预览 Tab 转为永久 Tab
+
+### 26.2 标题栏双击
+
+双击标题栏可最大化/还原窗口，与 Windows 原生行为一致。
+
+- 双击拖拽区域切换最大化状态
+- 按钮区域（`wails-no-drag`）不触发
+
+### 26.3 最大化按钮图标
+
+窗口最大化时，最大化按钮显示还原图标（两个重叠方框）：
+
+| 状态 | 图标 |
+|------|------|
+| 正常窗口 | `StopIcon`（单个方框） |
+| 最大化 | `Square2StackIcon`（两个重叠方框） |
+
+通过 Wails 窗口事件监听状态变化：
+- `wails:window-maximised`
+- `wails:window-restored`
+- `wails:window-unmaximised`
+
+## 27. 系统代理完整实现
+
+### 27.1 初始化时应用
+
+应用启动时根据设置自动应用代理配置：
+
+```typescript
+// App.vue loadData()
+const state = await api.getAppState()
+await api.setUseSystemProxy(state.useSystemProxy)
+```
+
+### 27.2 设置更改时应用
+
+设置保存时同步更新 HTTP 客户端：
+
+```typescript
+// SettingsModal.vue save()
+await api.setUseSystemProxy(localSettings.useSystemProxy)
+```
+
+### 27.3 后端 API
+
+```go
+// RequestHandler
+func (h *RequestHandler) SetUseSystemProxy(useProxy bool) {
+    if h.httpClient != nil {
+        h.httpClient.SetUseSystemProxy(useProxy)
+    }
+}
+```
+
+## 28. uTLS 突破 Cloudflare 检测
+
+### 28.1 TLS 指纹伪装
+
+使用 `github.com/refraction-networking/utls` 库模拟 Chrome 120 的 TLS 指纹：
+
+```go
+import utls "github.com/refraction-networking/utls"
+
+tlsConn := utls.UClient(conn, &utls.Config{
+    ServerName: hostname,
+}, utls.HelloChrome_120)
+```
+
+### 28.2 HTTP/2 支持
+
+根据 ALPN 协商结果选择协议：
+
+```go
+alpn := tlsConn.ConnectionState().NegotiatedProtocol
+if alpn == "h2" {
+    // 使用 HTTP/2
+    h2Transport := &http2.Transport{}
+    h2Conn, _ := h2Transport.NewClientConn(tlsConn)
+    return h2Conn.RoundTrip(req)
+}
+// 否则使用 HTTP/1.1
+```
+
+### 28.3 增强的请求头
+
+添加更多浏览器特征请求头：
+
+| 请求头 | 值 |
+|--------|-----|
+| Accept-Encoding | `gzip, deflate, br` |
+| Sec-Fetch-Dest | `empty` |
+| Sec-Fetch-Mode | `cors` |
+| Sec-Fetch-Site | `cross-site` |
+
+## 29. 请求体类型扩展
+
+### 29.1 支持的请求体类型
+
+| 类型 | 标签 | Content-Type | 用途 |
+|------|------|--------------|------|
+| none | None | - | 无请求体 |
+| form-data | Form Data | multipart/form-data | 文件上传、二进制数据 |
+| x-www-form-urlencoded | URL Encoded | application/x-www-form-urlencoded | 简单文本表单 |
+| binary | Binary | application/octet-stream | 二进制文件上传 |
+| json | JSON | application/json | JSON 数据 |
+| xml | XML | application/xml | XML 数据 |
+| text | Text | text/plain | 纯文本 |
+
+### 29.2 x-www-form-urlencoded 编码
+
+```go
+if req.BodyType == "x-www-form-urlencoded" && req.Body != "" {
+    var formItems []models.KeyValue
+    json.Unmarshal([]byte(req.Body), &formItems)
+    formData := url.Values{}
+    for _, item := range formItems {
+        if item.Enabled && item.Key != "" {
+            formData.Add(item.Key, item.Value)
+        }
+    }
+    bodyReader = strings.NewReader(formData.Encode())
+    contentType = "application/x-www-form-urlencoded"
+}
+```
+
+### 29.3 二进制文件上传
+
+前端使用 Wails 文件对话框选择文件：
+
+```typescript
+async function selectBinaryFile() {
+    const filePath = await window.runtime.OpenFileDialog({
+        Title: 'Select File',
+        Filters: [{ DisplayName: 'All Files (*.*)', Pattern: '*.*' }],
+    })
+    if (filePath) {
+        emit('update:body', filePath)  // body 存储文件路径
+    }
+}
+```
+
+后端读取并发送文件：
+
+```go
+if req.BodyType == "binary" && req.Body != "" {
+    file, err := os.Open(req.Body)  // body 是文件路径
+    if err != nil {
+        return nil, err
+    }
+    defer file.Close()
+    fileContent, _ := io.ReadAll(file)
+    bodyReader = bytes.NewReader(fileContent)
+    contentType = "application/octet-stream"
+}
 ```

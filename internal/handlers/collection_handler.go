@@ -87,6 +87,11 @@ func (h *CollectionHandler) MoveRequest(requestID int64, collectionID int64, fol
 	return h.service.MoveRequest(requestID, collectionID, folderID)
 }
 
+// MoveFolder moves a folder to a different collection
+func (h *CollectionHandler) MoveFolder(folderID int64, collectionID int64) error {
+	return h.service.MoveFolder(folderID, collectionID)
+}
+
 // ReorderCollections updates the sort order of collections
 func (h *CollectionHandler) ReorderCollections(ids []int64) error {
 	return h.service.ReorderCollections(ids)

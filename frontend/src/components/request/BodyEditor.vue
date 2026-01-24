@@ -19,11 +19,81 @@
       </button>
     </div>
     
-    <!-- Body editor -->
-    <div v-if="bodyType !== 'none'" class="flex-1 min-h-0">
+    <!-- Form data editor (multipart) -->
+    <div v-if="bodyType === 'form-data'" class="flex-1 min-h-0 overflow-auto">
+      <p 
+        class="text-xs mb-2"
+        :class="effectiveTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'"
+      >
+        Multipart form data - supports file uploads
+      </p>
+      <KeyValueEditor
+        :items="formDataItems"
+        @update:items="updateFormData"
+        keyPlaceholder="Field name"
+        valuePlaceholder="Value"
+        :showFileUpload="true"
+      />
+    </div>
+    
+    <!-- URL Encoded form editor -->
+    <div v-else-if="bodyType === 'x-www-form-urlencoded'" class="flex-1 min-h-0 overflow-auto">
+      <p 
+        class="text-xs mb-2"
+        :class="effectiveTheme === 'dark' ? 'text-gray-500' : 'text-gray-400'"
+      >
+        URL encoded form data - text values only
+      </p>
+      <KeyValueEditor
+        :items="formDataItems"
+        @update:items="updateFormData"
+        keyPlaceholder="Field name"
+        valuePlaceholder="Value"
+      />
+    </div>
+    
+    <!-- Binary file picker -->
+    <div v-else-if="bodyType === 'binary'" class="flex-1 flex flex-col items-center justify-center gap-4">
+      <div 
+        class="p-8 rounded-lg border-2 border-dashed text-center cursor-pointer transition-colors"
+        :class="[
+          effectiveTheme === 'dark' 
+            ? 'border-dark-border hover:border-accent/50' 
+            : 'border-light-border hover:border-accent/50'
+        ]"
+        @click="selectBinaryFile"
+      >
+        <DocumentArrowUpIcon class="w-12 h-12 mx-auto mb-3 text-gray-400" />
+        <p 
+          class="text-sm"
+          :class="effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'"
+        >
+          {{ body ? 'Click to change file' : 'Click to select a file' }}
+        </p>
+      </div>
+      
+      <div v-if="body" class="flex items-center gap-2">
+        <span 
+          class="text-sm truncate max-w-md"
+          :class="effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'"
+        >
+          {{ body }}
+        </span>
+        <button
+          @click="$emit('update:body', '')"
+          class="p-1 rounded hover:bg-red-500/20 text-red-500"
+          title="Remove file"
+        >
+          <XMarkIcon class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+    
+    <!-- Code editor for JSON/XML/Text -->
+    <div v-else-if="bodyType !== 'none'" class="flex-1 min-h-0">
       <div 
         ref="editorContainer" 
-        class="h-full rounded-md border overflow-hidden"
+        class="h-full min-h-[200px] rounded-md border overflow-hidden"
         :class="effectiveTheme === 'dark' ? 'border-dark-border' : 'border-light-border'"
       />
     </div>
@@ -45,6 +115,9 @@ import { xml } from '@codemirror/lang-xml'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { search, openSearchPanel } from '@codemirror/search'
 import { emitKeyboardAction } from '@/composables/useKeyboardActions'
+import KeyValueEditor from '@/components/common/KeyValueEditor.vue'
+import { DocumentArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import type { KeyValue } from '@/types'
 
 const props = defineProps<{
   body: string
@@ -61,6 +134,9 @@ const effectiveTheme = computed(() => appState.effectiveTheme)
 
 const bodyTypes = [
   { value: 'none', label: 'None' },
+  { value: 'form-data', label: 'Form Data' },
+  { value: 'x-www-form-urlencoded', label: 'URL Encoded' },
+  { value: 'binary', label: 'Binary' },
   { value: 'json', label: 'JSON' },
   { value: 'xml', label: 'XML' },
   { value: 'text', label: 'Text' },
@@ -69,16 +145,82 @@ const bodyTypes = [
 const editorContainer = ref<HTMLElement | null>(null)
 let editor: EditorView | null = null
 
+// Form data handling - stored as JSON array in body (for both form-data and x-www-form-urlencoded)
+const formDataItems = computed<KeyValue[]>(() => {
+  if ((props.bodyType !== 'form-data' && props.bodyType !== 'x-www-form-urlencoded') || !props.body) {
+    return []
+  }
+  try {
+    const parsed = JSON.parse(props.body)
+    if (Array.isArray(parsed)) {
+      return parsed.map(item => ({
+        key: item.key || '',
+        value: item.value || '',
+        enabled: item.enabled !== false,
+      }))
+    }
+  } catch {
+    // Invalid JSON, return empty
+  }
+  return []
+})
+
+function updateFormData(items: KeyValue[]) {
+  emit('update:body', JSON.stringify(items))
+}
+
+async function selectBinaryFile() {
+  try {
+    const { OpenFileDialog } = await import('../../../wailsjs/go/handlers/DialogHandler')
+    const filePath = await OpenFileDialog('Select File')
+    if (filePath) {
+      emit('update:body', filePath)
+    }
+  } catch (error) {
+    console.error('Failed to open file dialog:', error)
+  }
+}
+
+function formatBody() {
+  if (!editor) return
+  
+  const content = editor.state.doc.toString()
+  let formatted = content
+  
+  try {
+    if (props.bodyType === 'json') {
+      formatted = JSON.stringify(JSON.parse(content), null, 2)
+    }
+    // XML formatting could be added here if needed
+  } catch {
+    // If parsing fails, leave content as-is
+    return
+  }
+  
+  if (formatted !== content) {
+    editor.dispatch({
+      changes: { from: 0, to: editor.state.doc.length, insert: formatted }
+    })
+  }
+}
+
 function createEditor() {
-  if (!editorContainer.value || props.bodyType === 'none') return
+  if (!editorContainer.value || props.bodyType === 'none' || props.bodyType === 'form-data' || props.bodyType === 'x-www-form-urlencoded' || props.bodyType === 'binary') return
   
   const extensions = [
-    basicSetup,
-    search({ top: true }),
-    // Custom keymap to handle Ctrl+Enter and other shortcuts
+    // Custom keymap FIRST to intercept before basicSetup
     keymap.of([
       {
         key: 'Ctrl-Enter',
+        preventDefault: true,
+        run: () => {
+          emitKeyboardAction('send')
+          return true
+        },
+      },
+      {
+        key: 'Mod-Enter',
+        preventDefault: true,
         run: () => {
           emitKeyboardAction('send')
           return true
@@ -94,11 +236,20 @@ function createEditor() {
       {
         key: 'Ctrl-Shift-f',
         run: (view: EditorView) => {
-          openSearchPanel(view)
+          formatBody()
+          return true
+        },
+      },
+      {
+        key: 'Mod-Shift-f',
+        run: (view: EditorView) => {
+          formatBody()
           return true
         },
       },
     ]),
+    basicSetup,
+    search({ top: true }),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         emit('update:body', update.state.doc.toString())
@@ -136,7 +287,9 @@ function destroyEditor() {
 
 watch([() => props.bodyType, effectiveTheme], () => {
   destroyEditor()
-  setTimeout(createEditor, 0)
+  if (props.bodyType !== 'none' && props.bodyType !== 'form-data' && props.bodyType !== 'x-www-form-urlencoded' && props.bodyType !== 'binary') {
+    setTimeout(createEditor, 0)
+  }
 })
 
 watch(() => props.body, (newBody) => {
@@ -148,7 +301,7 @@ watch(() => props.body, (newBody) => {
 })
 
 onMounted(() => {
-  if (props.bodyType !== 'none') {
+  if (props.bodyType !== 'none' && props.bodyType !== 'form-data' && props.bodyType !== 'x-www-form-urlencoded' && props.bodyType !== 'binary') {
     createEditor()
   }
 })

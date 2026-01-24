@@ -18,6 +18,8 @@ type AppState struct {
 	ActiveEnvID       *int64    `json:"activeEnvId" db:"active_env_id"`
 	RequestTimeout    float64   `json:"requestTimeout" db:"request_timeout"`
 	AutoLocateSidebar bool      `json:"autoLocateSidebar" db:"auto_locate_sidebar"`
+	UseSystemProxy    bool      `json:"useSystemProxy" db:"use_system_proxy"`
+	RequestPanelTab   string    `json:"requestPanelTab" db:"request_panel_tab"`
 	UpdatedAt         time.Time `json:"updatedAt" db:"updated_at"`
 }
 

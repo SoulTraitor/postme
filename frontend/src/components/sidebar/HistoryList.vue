@@ -41,7 +41,7 @@
         <div
           v-for="item in group.items"
           :key="item.id"
-          class="flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer"
+          class="flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer group"
           :class="effectiveTheme === 'dark' ? 'hover:bg-dark-hover' : 'hover:bg-light-hover'"
           @click="openHistory(item)"
         >
@@ -67,6 +67,13 @@
           >
             {{ item.statusCode }}
           </span>
+          <button
+            @click.stop="deleteHistoryItem(item.id)"
+            class="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-red-500 flex-shrink-0"
+            title="Delete"
+          >
+            <XMarkIcon class="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
@@ -75,7 +82,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { MagnifyingGlassIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { MagnifyingGlassIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { useAppStateStore } from '@/stores/appState'
 import { useHistoryStore } from '@/stores/history'
 import { useTabsStore } from '@/stores/tabs'
@@ -157,7 +164,40 @@ function openHistory(item: History) {
   )
 }
 
+async function deleteHistoryItem(id: number) {
+  const modal = (window as any).$modal
+  if (modal) {
+    const confirmed = await modal.confirm({
+      title: 'Delete History Item',
+      message: 'Are you sure you want to delete this history item?',
+      confirmText: 'Delete',
+      danger: true,
+    })
+    
+    if (!confirmed) return
+  }
+  
+  try {
+    await api.deleteHistoryItem(id)
+    historyStore.deleteHistory(id)
+  } catch (error) {
+    console.error('Failed to delete history item:', error)
+  }
+}
+
 async function clearHistory() {
+  const modal = (window as any).$modal
+  if (modal) {
+    const confirmed = await modal.confirm({
+      title: 'Clear All History',
+      message: 'Are you sure you want to clear all history? This action cannot be undone.',
+      confirmText: 'Clear All',
+      danger: true,
+    })
+    
+    if (!confirmed) return
+  }
+  
   try {
     await api.clearHistory()
     historyStore.clearHistory()

@@ -72,6 +72,11 @@ func (s *CollectionService) DeleteFolder(id int64) error {
 	return s.folderRepo.Delete(id)
 }
 
+// MoveFolder moves a folder to a different collection
+func (s *CollectionService) MoveFolder(folderID int64, collectionID int64) error {
+	return s.folderRepo.Move(folderID, collectionID)
+}
+
 // CollectionTree represents a collection with its folders and requests
 type CollectionTree struct {
 	Collection models.Collection `json:"collection"`

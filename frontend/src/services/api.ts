@@ -136,6 +136,8 @@ function convertAppState(state: models.AppState): AppState {
     activeEnvId: state.activeEnvId ?? null,
     requestTimeout: state.requestTimeout,
     autoLocateSidebar: state.autoLocateSidebar,
+    useSystemProxy: state.useSystemProxy,
+    requestPanelTab: (state.requestPanelTab || 'params') as 'params' | 'headers' | 'body',
     updatedAt: String(state.updatedAt),
   }
 }
@@ -233,6 +235,10 @@ export const api = {
     await CollectionHandler.MoveRequest(requestId, collectionId, folderId)
   },
 
+  async moveFolder(folderId: number, collectionId: number): Promise<void> {
+    await CollectionHandler.MoveFolder(folderId, collectionId)
+  },
+
   async reorderCollections(ids: number[]): Promise<void> {
     await CollectionHandler.ReorderCollections(ids)
   },
@@ -284,6 +290,11 @@ export const api = {
     await RequestHandler.Delete(id)
   },
 
+  async duplicateRequest(id: number): Promise<Request> {
+    const req = await RequestHandler.Duplicate(id)
+    return convertRequest(req)
+  },
+
   async getRequest(id: number): Promise<Request> {
     const req = await RequestHandler.GetByID(id)
     return convertRequest(req)
@@ -314,6 +325,10 @@ export const api = {
 
   async cancelRequest(tabId: string): Promise<void> {
     await RequestHandler.CancelRequest(tabId)
+  },
+
+  async setUseSystemProxy(useProxy: boolean): Promise<void> {
+    await RequestHandler.SetUseSystemProxy(useProxy)
   },
 
   // Environment operations

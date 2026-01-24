@@ -69,3 +69,12 @@ func (r *FolderRepository) Delete(id int64) error {
 	_, err := r.db.Exec("DELETE FROM folders WHERE id = ?", id)
 	return err
 }
+
+// Move moves a folder to a different collection
+func (r *FolderRepository) Move(id int64, collectionID int64) error {
+	_, err := r.db.Exec(`
+		UPDATE folders SET collection_id = ?, updated_at = ?
+		WHERE id = ?
+	`, collectionID, time.Now(), id)
+	return err
+}

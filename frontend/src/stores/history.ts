@@ -9,17 +9,17 @@ export const useHistoryStore = defineStore('history', () => {
   // Group history by date
   const groupedHistory = computed(() => {
     const groups: { date: string; label: string; items: History[] }[] = []
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
+    const now = new Date()
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const yesterdayDate = new Date(now)
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1)
+    const yesterdayKey = `${yesterdayDate.getFullYear()}-${String(yesterdayDate.getMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getDate()).padStart(2, '0')}`
 
     const dateGroups = new Map<string, History[]>()
 
     for (const item of history.value) {
       const itemDate = new Date(item.createdAt)
-      itemDate.setHours(0, 0, 0, 0)
-      const dateKey = itemDate.toISOString().split('T')[0]
+      const dateKey = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}-${String(itemDate.getDate()).padStart(2, '0')}`
 
       if (!dateGroups.has(dateKey)) {
         dateGroups.set(dateKey, [])
@@ -31,18 +31,19 @@ export const useHistoryStore = defineStore('history', () => {
     const sortedDates = Array.from(dateGroups.keys()).sort((a, b) => b.localeCompare(a))
 
     for (const dateKey of sortedDates) {
-      const itemDate = new Date(dateKey)
       let label: string
 
-      if (itemDate.getTime() === today.getTime()) {
+      if (dateKey === todayKey) {
         label = 'Today'
-      } else if (itemDate.getTime() === yesterday.getTime()) {
+      } else if (dateKey === yesterdayKey) {
         label = 'Yesterday'
       } else {
+        const [year, month, day] = dateKey.split('-').map(Number)
+        const itemDate = new Date(year, month - 1, day)
         label = itemDate.toLocaleDateString('en-US', { 
           month: 'short', 
           day: 'numeric',
-          year: itemDate.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+          year: itemDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
         })
       }
 

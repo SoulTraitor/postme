@@ -58,6 +58,35 @@ func (h *RequestHandler) Delete(id int64) error {
 	return h.service.Delete(id)
 }
 
+// Duplicate duplicates a request with a new name
+func (h *RequestHandler) Duplicate(id int64) (*models.Request, error) {
+	// Get the original request
+	original, err := h.service.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a copy with modified name
+	duplicate := &models.Request{
+		CollectionID: original.CollectionID,
+		FolderID:     original.FolderID,
+		Name:         original.Name + " (copy)",
+		Method:       original.Method,
+		URL:          original.URL,
+		Headers:      original.Headers,
+		Params:       original.Params,
+		Body:         original.Body,
+		BodyType:     original.BodyType,
+		SortOrder:    original.SortOrder + 1, // Place after original
+	}
+
+	if err := h.service.Create(duplicate); err != nil {
+		return nil, err
+	}
+
+	return duplicate, nil
+}
+
 // ExecuteRequestParams represents the parameters for executing a request
 type ExecuteRequestParams struct {
 	TabID    string            `json:"tabId"`
@@ -127,5 +156,12 @@ func (h *RequestHandler) CancelRequest(tabID string) {
 	if cancel, ok := h.cancelFuncs[tabID]; ok {
 		cancel()
 		delete(h.cancelFuncs, tabID)
+	}
+}
+
+// SetUseSystemProxy enables or disables system proxy usage for HTTP requests
+func (h *RequestHandler) SetUseSystemProxy(useProxy bool) {
+	if h.httpClient != nil {
+		h.httpClient.SetUseSystemProxy(useProxy)
 	}
 }

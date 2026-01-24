@@ -8,7 +8,7 @@
           : 'hover:bg-light-hover text-gray-600'
       ]"
     >
-      <span v-if="activeEnvironment">{{ activeEnvironment.name }}</span>
+      <span v-if="activeEnvironment" class="truncate max-w-[120px]">{{ activeEnvironment.name }}</span>
       <span v-else class="text-gray-500">No Environment</span>
       <ChevronDownIcon class="w-4 h-4" />
     </MenuButton>
@@ -62,7 +62,7 @@
               ]"
             >
               <CheckIcon v-if="activeEnvironment?.id === env.id" class="w-4 h-4" />
-              <span :class="activeEnvironment?.id === env.id ? '' : 'pl-6'">{{ env.name }}</span>
+              <span class="truncate" :class="activeEnvironment?.id === env.id ? '' : 'pl-6'">{{ env.name }}</span>
             </button>
           </MenuItem>
           

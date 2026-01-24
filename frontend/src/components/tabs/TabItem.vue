@@ -1,15 +1,20 @@
 <template>
   <div
-    class="group flex items-center gap-1 px-3 py-1.5 border-r cursor-pointer min-w-0 max-w-[200px]"
+    class="group flex items-center gap-1 px-3 py-1.5 border-r cursor-pointer min-w-0 max-w-[200px] relative"
     :class="[
       isActive 
-        ? (effectiveTheme === 'dark' ? 'bg-dark-surface' : 'bg-light-surface')
+        ? (effectiveTheme === 'dark' ? 'bg-dark-surface' : 'bg-white')
         : (effectiveTheme === 'dark' ? 'hover:bg-dark-hover' : 'hover:bg-light-hover'),
       effectiveTheme === 'dark' ? 'border-dark-border' : 'border-light-border'
     ]"
     @click="$emit('click')"
     @dblclick="$emit('dblclick')"
   >
+    <!-- Active indicator bar -->
+    <div 
+      v-if="isActive"
+      class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
+    />
     <!-- Dirty indicator -->
     <span 
       v-if="tab.isDirty" 

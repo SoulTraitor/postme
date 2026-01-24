@@ -6,8 +6,7 @@
         ? 'bg-accent/20' 
         : (effectiveTheme === 'dark' ? 'hover:bg-dark-hover' : 'hover:bg-light-hover')
     ]"
-    @click="$emit('click')"
-    @dblclick="$emit('dblclick')"
+    @click="handleClick"
   >
     <span 
       class="text-xs font-medium w-12 text-center flex-shrink-0"
@@ -33,9 +32,9 @@ const props = defineProps<{
   request: Request
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   click: []
-  dblclick: []
+  pinRequest: []
 }>()
 
 const appState = useAppStateStore()
@@ -65,4 +64,21 @@ const methodColor = computed(() => {
     default: return 'text-method-options'
   }
 })
+
+// Double-click detection via click timing
+let lastClickTime = 0
+const DBLCLICK_THRESHOLD = 300
+
+function handleClick() {
+  const now = Date.now()
+  if (now - lastClickTime < DBLCLICK_THRESHOLD) {
+    // Double click detected
+    emit('pinRequest')
+    lastClickTime = 0
+  } else {
+    // Single click - emit and let parent handle delay
+    emit('click')
+    lastClickTime = now
+  }
+}
 </script>

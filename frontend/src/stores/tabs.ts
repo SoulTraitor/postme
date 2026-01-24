@@ -86,7 +86,7 @@ export const useTabsStore = defineStore('tabs', () => {
     }
   }
 
-  // Add a new empty tab
+  // Add a new empty tab at the end
   function addTab() {
     const newTab = createEmptyTab()
     tabs.value.push(newTab)
@@ -145,8 +145,8 @@ export const useTabsStore = defineStore('tabs', () => {
 
   // Preview a request (single-click)
   function previewRequest(requestId: number, title: string, method: string, url: string, headers: KeyValue[], params: KeyValue[], body: string, bodyType: string) {
-    // Check if already open as non-preview
-    const existing = tabs.value.find(t => t.requestId === requestId && !t.isPreview)
+    // Check if already open (pinned or preview)
+    const existing = tabs.value.find(t => t.requestId === requestId)
     if (existing) {
       activeTabId.value = existing.id
       return existing
@@ -267,6 +267,22 @@ export const useTabsStore = defineStore('tabs', () => {
     tabs.value.splice(toIndex, 0, moved)
   }
 
+  // Update tab title when a request is renamed
+  function updateTabTitleByRequestId(requestId: number, newTitle: string) {
+    const tab = tabs.value.find(t => t.requestId === requestId)
+    if (tab) {
+      tab.title = newTitle
+    }
+  }
+
+  // Close tab when a request is deleted
+  function closeTabByRequestId(requestId: number) {
+    const tab = tabs.value.find(t => t.requestId === requestId)
+    if (tab) {
+      closeTab(tab.id)
+    }
+  }
+
   return {
     tabs,
     activeTabId,
@@ -283,5 +299,7 @@ export const useTabsStore = defineStore('tabs', () => {
     markSaved,
     getTab,
     reorderTabs,
+    updateTabTitleByRequestId,
+    closeTabByRequestId,
   }
 })
