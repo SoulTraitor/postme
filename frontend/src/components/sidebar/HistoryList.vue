@@ -43,6 +43,7 @@
           :key="item.id"
           class="flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer group"
           :class="effectiveTheme === 'dark' ? 'hover:bg-dark-hover' : 'hover:bg-light-hover'"
+          :title="item.url"
           @click="openHistory(item)"
         >
           <span class="text-xs text-gray-500 flex-shrink-0">
@@ -152,8 +153,8 @@ function openHistory(item: History) {
     headers = JSON.parse(item.requestHeaders || '[]')
   } catch {}
   
-  tabsStore.openRequest(
-    item.requestId || 0,
+  // Always open history as new unsaved tab
+  tabsStore.openHistoryAsNewTab(
     `${item.method} ${formatUrl(item.url)}`,
     item.method,
     item.url,

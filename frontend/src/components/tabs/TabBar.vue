@@ -29,6 +29,7 @@
         @click="setActiveTab(tab.id)"
         @close="closeTab(tab.id)"
         @dblclick="pinTab(tab.id)"
+        @contextmenu="onTabContextMenu($event, tab.id)"
       />
       <!-- Drop zone after last tab -->
       <div 
@@ -50,15 +51,19 @@
         <PlusIcon class="w-4 h-4" />
       </button>
     </div>
+    
+    <!-- Tab context menu -->
+    <ContextMenu ref="contextMenuRef" :items="contextMenuItems" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { PlusIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, DocumentDuplicateIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { useAppStateStore } from '@/stores/appState'
 import { useTabsStore } from '@/stores/tabs'
 import TabItem from './TabItem.vue'
+import ContextMenu, { type ContextMenuItem } from '@/components/common/ContextMenu.vue'
 
 const appState = useAppStateStore()
 const tabsStore = useTabsStore()
@@ -191,5 +196,38 @@ function onDropContainer(e: DragEvent) {
 function dropIndicatorClass(index: number) {
   if (dropTargetIndex.value !== index) return ''
   return dropPosition.value === 'before' ? 'border-l-2 border-accent' : 'border-r-2 border-accent'
+}
+
+// Context menu
+const contextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null)
+const contextMenuTabId = ref<string | null>(null)
+
+const contextMenuItems = computed<ContextMenuItem[]>(() => [
+  {
+    id: 'duplicate',
+    label: 'Duplicate Tab',
+    icon: DocumentDuplicateIcon,
+    action: () => {
+      if (contextMenuTabId.value) {
+        tabsStore.duplicateTab(contextMenuTabId.value)
+      }
+    }
+  },
+  {
+    id: 'close',
+    label: 'Close Tab',
+    icon: XMarkIcon,
+    danger: true,
+    action: () => {
+      if (contextMenuTabId.value) {
+        closeTab(contextMenuTabId.value)
+      }
+    }
+  }
+])
+
+function onTabContextMenu(event: MouseEvent, tabId: string) {
+  contextMenuTabId.value = tabId
+  contextMenuRef.value?.open(event)
 }
 </script>

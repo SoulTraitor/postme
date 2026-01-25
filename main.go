@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"embed"
+	"os"
+	"path/filepath"
 
 	"github.com/SoulTraitor/postme/internal/database"
 	"github.com/SoulTraitor/postme/internal/database/repository"
@@ -69,6 +71,7 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 26, G: 26, B: 26, A: 1},
 		Windows: &windows.Options{
+			WebviewUserDataPath:  filepath.Join(os.Getenv("APPDATA"), "postme"),
 			WebviewIsTransparent: false,
 			WindowIsTranslucent:  false,
 			DisableWindowIcon:    false,

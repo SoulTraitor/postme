@@ -283,6 +283,55 @@ export const useTabsStore = defineStore('tabs', () => {
     }
   }
 
+  // Open history item as new unsaved tab (always creates new tab)
+  function openHistoryAsNewTab(title: string, method: string, url: string, headers: KeyValue[], params: KeyValue[], body: string, bodyType: string) {
+    // Create new tab without requestId (unsaved)
+    const newTab: Tab = {
+      id: generateId(),
+      requestId: null,
+      title,
+      method,
+      url,
+      headers,
+      params,
+      body,
+      bodyType,
+      isDirty: false,
+      isPreview: false,
+      originalState: null, // No original state = new unsaved request
+    }
+    tabs.value.push(newTab)
+    activeTabId.value = newTab.id
+    return newTab
+  }
+
+  // Duplicate an existing tab
+  function duplicateTab(tabId: string) {
+    const tab = tabs.value.find(t => t.id === tabId)
+    if (!tab) return null
+
+    const newTab: Tab = {
+      id: generateId(),
+      requestId: null, // New tab is unsaved
+      title: `${tab.title} (Copy)`,
+      method: tab.method,
+      url: tab.url,
+      headers: JSON.parse(JSON.stringify(tab.headers)),
+      params: JSON.parse(JSON.stringify(tab.params)),
+      body: tab.body,
+      bodyType: tab.bodyType,
+      isDirty: false,
+      isPreview: false,
+      originalState: null, // No original state = new unsaved request
+    }
+    
+    // Insert after the current tab
+    const index = tabs.value.findIndex(t => t.id === tabId)
+    tabs.value.splice(index + 1, 0, newTab)
+    activeTabId.value = newTab.id
+    return newTab
+  }
+
   return {
     tabs,
     activeTabId,
@@ -301,5 +350,7 @@ export const useTabsStore = defineStore('tabs', () => {
     reorderTabs,
     updateTabTitleByRequestId,
     closeTabByRequestId,
+    openHistoryAsNewTab,
+    duplicateTab,
   }
 })

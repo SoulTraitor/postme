@@ -9,6 +9,7 @@
     ]"
     @click="$emit('click')"
     @dblclick="$emit('dblclick')"
+    @contextmenu="$emit('contextmenu', $event)"
   >
     <!-- Active indicator bar -->
     <div 
@@ -66,6 +67,7 @@ defineEmits<{
   click: []
   close: []
   dblclick: []
+  contextmenu: [event: MouseEvent]
 }>()
 
 const appState = useAppStateStore()

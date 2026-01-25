@@ -63,8 +63,8 @@
           class="w-10 h-10 flex items-center justify-center hover:bg-gray-500/20"
           :title="isMaximized ? 'Restore' : 'Maximize'"
         >
-          <Square2StackIcon v-if="isMaximized" class="w-3 h-3" />
-          <StopIcon v-else class="w-3 h-3" />
+          <StopIcon v-if="isMaximized" class="w-3 h-3" />
+          <Square2StackIcon v-else class="w-3 h-3" />
         </button>
         <button
           @click="closeWindow"

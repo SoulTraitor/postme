@@ -1041,18 +1041,25 @@ Form-Data 使用键值对编辑器，数据以 JSON 数组格式存储在 body �
 
 Go 的 `http.DefaultTransport` 会自动读取这些环境变量并应用代理设置。
 
-## 15. 数据库文件位置
+## 15. 数据存储位置
 
-数据库文件存放在应用同级目录下，便于整体迁移：
+### 15.1 SQLite 数据库
+
+数据库文件存放在应用同级目录的 data 文件夹：
 
 ```
-postme/
-├── postme.exe
-├── data/
-│   └── postme.db
+<exe_dir>/data/postme.db
 ```
 
-开发模式下使用当前工作目录。
+### 15.2 WebView2 用户数据
+
+WebView2 的缓存、Cookie 等数据存放在用户配置目录：
+
+```
+Windows: %APPDATA%/postme/
+```
+
+通过 `WebviewUserDataPath` 配置，避免默认使用 `postme.exe` 作为文件夹名。
 
 ## 16. 请求控制
 
