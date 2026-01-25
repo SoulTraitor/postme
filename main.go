@@ -20,6 +20,15 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// getWebviewUserDataPath returns the path for WebView2 user data
+func getWebviewUserDataPath() string {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(configDir, "postme")
+}
+
 func main() {
 	// Create handlers
 	requestHandler := handlers.NewRequestHandler()
@@ -71,7 +80,7 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 26, G: 26, B: 26, A: 1},
 		Windows: &windows.Options{
-			WebviewUserDataPath:  filepath.Join(os.Getenv("APPDATA"), "postme"),
+			WebviewUserDataPath:  getWebviewUserDataPath(),
 			WebviewIsTransparent: false,
 			WindowIsTranslucent:  false,
 			DisableWindowIcon:    false,
