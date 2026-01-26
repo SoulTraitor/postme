@@ -269,6 +269,19 @@ function debouncedSave() {
   }, 1000)
 }
 
+// Immediate save for critical state changes (window maximize/restore)
+async function immediateSave() {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout)
+    saveTimeout = null
+  }
+  try {
+    await api.updateAppState(appState.getStateForSave())
+  } catch (error) {
+    console.error('Failed to save app state:', error)
+  }
+}
+
 // Watch for state changes
 watch(
   () => [
@@ -364,7 +377,7 @@ watch(
 )
 
 // Track window state changes
-async function updateWindowState() {
+async function updateWindowState(saveImmediately = false) {
   try {
     // @ts-ignore - Wails runtime
     if (window.runtime) {
@@ -385,7 +398,11 @@ async function updateWindowState() {
         appState.windowY = pos.y
       }
       
-      debouncedSave()
+      if (saveImmediately) {
+        await immediateSave()
+      } else {
+        debouncedSave()
+      }
     }
   } catch (error) {
     console.error('Failed to get window state:', error)
@@ -394,7 +411,19 @@ async function updateWindowState() {
 
 // Debounced window resize handler
 let resizeTimeout: number | null = null
-function handleWindowResize() {
+async function handleWindowResize() {
+  // Don't update size while maximized
+  // @ts-ignore - Wails runtime
+  if (window.runtime) {
+    try {
+      // @ts-ignore
+      const isMax = await window.runtime.WindowIsMaximised()
+      if (isMax) return
+    } catch {
+      // Ignore
+    }
+  }
+  
   if (resizeTimeout) {
     clearTimeout(resizeTimeout)
   }
@@ -413,22 +442,30 @@ onMounted(() => {
     // @ts-ignore
     window.runtime.EventsOn('wails:window-maximised', () => {
       appState.windowMaximized = true
-      debouncedSave()
+      immediateSave()
     })
     // @ts-ignore
     window.runtime.EventsOn('wails:window-restored', () => {
       appState.windowMaximized = false
-      updateWindowState()
+      updateWindowState(true)
     })
     // @ts-ignore
     window.runtime.EventsOn('wails:window-unmaximised', () => {
       appState.windowMaximized = false
-      updateWindowState()
+      updateWindowState(true)
     })
   }
   
+  // Get initial window state (don't save, just sync)
+  updateWindowState(false)
+  
   // Track resize events
   window.addEventListener('resize', handleWindowResize)
+  
+  // Save immediately before window closes
+  window.addEventListener('beforeunload', () => {
+    immediateSave()
+  })
 })
 
 onUnmounted(() => {

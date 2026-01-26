@@ -9,7 +9,6 @@ import (
 	"github.com/SoulTraitor/postme/internal/database"
 	"github.com/SoulTraitor/postme/internal/database/repository"
 	"github.com/SoulTraitor/postme/internal/handlers"
-	"github.com/SoulTraitor/postme/internal/models"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -44,9 +43,11 @@ func main() {
 	}
 
 	// Load saved app state for window restoration
-	var savedState *models.AppState
 	repo := repository.NewAppStateRepository(database.GetDB())
-	savedState, _ = repo.Get()
+	savedState, _ := repo.Get()
+
+	// Store context for shutdown
+	var appCtx context.Context
 
 	// Default window settings
 	windowWidth := 1200
@@ -86,6 +87,7 @@ func main() {
 			DisableWindowIcon:    false,
 		},
 		OnStartup: func(ctx context.Context) {
+			appCtx = ctx
 			// Database already initialized, just init handlers
 			requestHandler.Init()
 			collectionHandler.Init()
@@ -98,6 +100,34 @@ func main() {
 			if savedState != nil && savedState.WindowX != nil && savedState.WindowY != nil {
 				runtime.WindowSetPosition(ctx, *savedState.WindowX, *savedState.WindowY)
 			}
+		},
+		OnBeforeClose: func(ctx context.Context) (prevent bool) {
+			// Save window state before closing (window is still valid here)
+			isMaximized := runtime.WindowIsMaximised(appCtx)
+			w, h := runtime.WindowGetSize(appCtx)
+			x, y := runtime.WindowGetPosition(appCtx)
+			
+			// Get current state from database
+			currentState, err := repo.Get()
+			if err != nil {
+				return false
+			}
+			
+			// Update maximized state
+			currentState.WindowMaximized = isMaximized
+			
+			// Save size/position only when not maximized
+			if !isMaximized && w > 0 && h > 0 {
+				currentState.WindowWidth = w
+				currentState.WindowHeight = h
+				currentState.WindowX = &x
+				currentState.WindowY = &y
+			}
+			
+			// Save to database
+			_ = repo.Update(currentState)
+			
+			return false
 		},
 		OnShutdown: func(ctx context.Context) {
 			database.Close()

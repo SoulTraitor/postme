@@ -63,8 +63,8 @@
           class="w-10 h-10 flex items-center justify-center hover:bg-gray-500/20"
           :title="isMaximized ? 'Restore' : 'Maximize'"
         >
-          <StopIcon v-if="isMaximized" class="w-3 h-3" />
-          <Square2StackIcon v-else class="w-3 h-3" />
+          <Square2StackIcon v-if="isMaximized" class="w-3 h-3" />
+          <StopIcon v-else class="w-3 h-3" />
         </button>
         <button
           @click="closeWindow"
@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useAppStateStore } from '@/stores/appState'
 import { 
   Bars3Icon, 
@@ -100,7 +100,7 @@ const appState = useAppStateStore()
 
 const effectiveTheme = computed(() => appState.effectiveTheme)
 const settingsOpen = ref(false)
-const isMaximized = ref(false)
+const isMaximized = computed(() => appState.windowMaximized)
 
 const themeTooltip = computed(() => {
   return appState.effectiveTheme === 'light' 
@@ -126,9 +126,9 @@ function minimizeWindow() {
 function maximizeWindow() {
   // @ts-ignore - Wails runtime
   if (window.runtime) {
+    // Optimistic update for immediate UI feedback
+    appState.windowMaximized = !appState.windowMaximized
     window.runtime.WindowToggleMaximise()
-    // Toggle the local state immediately
-    isMaximized.value = !isMaximized.value
   }
 }
 
@@ -147,46 +147,4 @@ function onTitleBarDblClick(e: MouseEvent) {
   }
   maximizeWindow()
 }
-
-// Listen for window state changes
-onMounted(async () => {
-  // @ts-ignore - Wails runtime
-  if (window.runtime) {
-    // Check initial maximized state
-    try {
-      // @ts-ignore
-      isMaximized.value = await window.runtime.WindowIsMaximised()
-    } catch {
-      // Ignore if not available
-    }
-    
-    // @ts-ignore - Wails runtime events
-    if (window.runtime.EventsOn) {
-      // @ts-ignore
-      window.runtime.EventsOn('wails:window-maximised', () => {
-        isMaximized.value = true
-      })
-      // @ts-ignore
-      window.runtime.EventsOn('wails:window-restored', () => {
-        isMaximized.value = false
-      })
-      // @ts-ignore
-      window.runtime.EventsOn('wails:window-unmaximised', () => {
-        isMaximized.value = false
-      })
-    }
-  }
-})
-
-onUnmounted(() => {
-  // @ts-ignore - Wails runtime events
-  if (window.runtime && window.runtime.EventsOff) {
-    // @ts-ignore
-    window.runtime.EventsOff('wails:window-maximised')
-    // @ts-ignore
-    window.runtime.EventsOff('wails:window-restored')
-    // @ts-ignore
-    window.runtime.EventsOff('wails:window-unmaximised')
-  }
-})
 </script>
