@@ -23,12 +23,12 @@ body {
   background: transparent;
 }
 
-.dark ::-webkit-scrollbar-thumb {
+html.dark ::-webkit-scrollbar-thumb {
   background: #404040;
   border-radius: 4px;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: #525252;
 }
 
@@ -51,7 +51,7 @@ body {
 }
 
 /* Text selection */
-.dark ::selection {
+html.dark ::selection {
   background: rgba(217, 119, 6, 0.3);
 }
 
@@ -62,6 +62,17 @@ body {
 /* Transition utilities */
 .transition-sidebar {
   transition: width 0.2s ease-in-out;
+}
+
+/* Isolate main content to prevent modal backdrop rendering artifacts */
+#app > div > div:not(:last-child) {
+  isolation: isolate;
+}
+
+/* Fix WebView2 text rendering artifacts in light mode when modal is open */
+html:not(.dark) #app {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* CodeMirror search highlighting */
@@ -76,11 +87,176 @@ body {
   border-radius: 2px;
 }
 
-.dark .cm-searchMatch {
+html.dark .cm-searchMatch {
   background-color: rgba(255, 213, 0, 0.25) !important;
 }
 
-.dark .cm-searchMatch-selected {
+html.dark .cm-searchMatch-selected {
   background-color: rgba(255, 140, 0, 0.5) !important;
   box-shadow: 0 0 0 1px rgba(255, 140, 0, 0.7);
+}
+
+/* CodeMirror light mode - backgrounds only, DO NOT set text color here */
+html:not(.dark) .cm-editor {
+  background-color: #ffffff;
+  /* Force GPU compositing to fix WebView2 text rendering */
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+html:not(.dark) .cm-editor .cm-scroller {
+  background-color: #ffffff;
+}
+
+html:not(.dark) .cm-editor .cm-content {
+  background-color: #ffffff;
+  /* Disable subpixel antialiasing which causes color issues in WebView2 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html:not(.dark) .cm-editor .cm-line {
+  background-color: transparent;
+}
+
+/* Dark mode CodeMirror - no special handling needed */
+html.dark .cm-editor {
+  background-color: #282c34;
+}
+
+html.dark .cm-editor .cm-scroller {
+  background-color: #282c34;
+}
+
+html.dark .cm-editor .cm-content {
+  background-color: #282c34;
+}
+
+/* Light mode syntax highlighting via classHighlighter (.tok-* classes) */
+html:not(.dark) .cm-editor .tok-string { color: #032f62 !important; }
+html:not(.dark) .cm-editor .tok-string2 { color: #e36209 !important; }
+html:not(.dark) .cm-editor .tok-number { color: #005cc5 !important; }
+html:not(.dark) .cm-editor .tok-literal { color: #005cc5 !important; }
+html:not(.dark) .cm-editor .tok-bool { color: #d73a49 !important; }
+html:not(.dark) .cm-editor .tok-atom { color: #d73a49 !important; }
+html:not(.dark) .cm-editor .tok-propertyName { color: #22863a !important; }
+html:not(.dark) .cm-editor .tok-punctuation { color: #24292e !important; }
+html:not(.dark) .cm-editor .tok-keyword { color: #d73a49 !important; }
+html:not(.dark) .cm-editor .tok-operator { color: #d73a49 !important; }
+html:not(.dark) .cm-editor .tok-comment { color: #6a737d !important; font-style: italic; }
+html:not(.dark) .cm-editor .tok-meta { color: #6a737d !important; }
+html:not(.dark) .cm-editor .tok-tagName { color: #22863a !important; }
+html:not(.dark) .cm-editor .tok-attributeName { color: #6f42c1 !important; }
+html:not(.dark) .cm-editor .tok-typeName { color: #6f42c1 !important; }
+html:not(.dark) .cm-editor .tok-className { color: #6f42c1 !important; }
+html:not(.dark) .cm-editor .tok-namespace { color: #6f42c1 !important; }
+html:not(.dark) .cm-editor .tok-variableName { color: #24292e !important; }
+html:not(.dark) .cm-editor .tok-link { color: #0366d6 !important; text-decoration: underline; }
+html:not(.dark) .cm-editor .tok-heading { color: #005cc5 !important; font-weight: bold; }
+html:not(.dark) .cm-editor .tok-emphasis { font-style: italic; }
+html:not(.dark) .cm-editor .tok-strong { font-weight: bold; }
+
+.cm-editor .cm-gutters {
+  background-color: #f5f5f5;
+  border-right: 1px solid #e5e5e5;
+}
+
+.cm-editor .cm-activeLineGutter {
+  background-color: #e8e8e8;
+}
+
+.cm-editor .cm-activeLine {
+  background-color: #f0f0f0;
+}
+
+/* Light mode selection - high contrast solid color */
+.cm-editor .cm-selectionBackground,
+.cm-editor.cm-focused .cm-selectionBackground {
+  background-color: #b4d7ff !important;
+}
+
+/* Dark mode overrides for CodeMirror */
+html.dark .cm-editor,
+html.dark .cm-editor .cm-scroller,
+html.dark .cm-editor .cm-content {
+  background-color: #282c34;
+}
+
+html.dark .cm-editor .cm-gutters {
+  background-color: #21252b;
+  border-right: 1px solid #181a1f;
+}
+
+html.dark .cm-editor .cm-activeLineGutter {
+  background-color: #2c313a;
+}
+
+html.dark .cm-editor .cm-activeLine {
+  background-color: #2c313a;
+}
+
+/* Dark mode selection - use bright highlight color */
+html.dark .cm-editor .cm-selectionBackground,
+html.dark .cm-editor.cm-focused .cm-selectionBackground,
+html.dark .cm-editor .cm-selectionLayer .cm-selectionBackground {
+  background-color: #264f78 !important;
+}
+
+html.dark .cm-editor .cm-content ::selection {
+  background-color: #264f78 !important;
+}
+
+/* Dark mode matching words highlight (when text is selected, other occurrences are highlighted) */
+html.dark .cm-editor .cm-selectionMatch {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 2px;
+}
+
+/* Search highlighting */
+.cm-searchMatch {
+  background-color: #ffdd00 !important;
+}
+
+.cm-searchMatch-selected {
+  background-color: #ff9632 !important;
+}
+
+.dark .cm-searchMatch {
+  background-color: rgba(255, 213, 0, 0.4) !important;
+}
+
+html.dark .cm-searchMatch-selected {
+  background-color: rgba(255, 140, 0, 0.6) !important;
+}
+
+/* Modal backdrop - use rgba instead of opacity to avoid WebView2 compositing artifacts */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Force GPU layer to prevent text rendering artifacts */
+  transform: translateZ(0);
+  will-change: opacity;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* Create isolated stacking context */
+  isolation: isolate;
+}
+
+/* ========== Light mode selection fix ========== */
+html:not(.dark) .cm-editor .cm-selectionBackground,
+html:not(.dark) .cm-editor.cm-focused .cm-selectionBackground,
+html:not(.dark) .cm-editor .cm-selectionLayer .cm-selectionBackground {
+  background-color: #b4d7ff !important;
+}
+
+html:not(.dark) .cm-editor ::selection {
+  background-color: #b4d7ff !important;
+}
+
+/* ========== Modal glow/shadow fix for light mode ========== */
+/* Force GPU compositing on content behind modal to prevent WebView2 text rendering artifacts */
+html:not(.dark) #app {
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }

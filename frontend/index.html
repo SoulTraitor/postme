@@ -10,6 +10,9 @@
         padding: 0;
         overflow: hidden;
         height: 100%;
+        /* Prevent subpixel antialiasing issues with overlays in WebView2 */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
     </style>
   </head>

@@ -30,7 +30,10 @@
     </div>
     
     <!-- Body content -->
-    <div class="flex-1 overflow-auto">
+    <div 
+      class="flex-1 overflow-auto"
+      :class="effectiveTheme === 'dark' ? 'bg-[#282c34]' : 'bg-white'"
+    >
       <div ref="editorContainer" class="h-full" />
     </div>
   </div>
@@ -39,12 +42,18 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStateStore } from '@/stores/appState'
-import { EditorView, basicSetup } from 'codemirror'
-import { EditorState } from '@codemirror/state'
+import { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine, keymap } from '@codemirror/view'
+import { EditorState, Prec } from '@codemirror/state'
+import { foldGutter, indentOnInput, bracketMatching, foldKeymap } from '@codemirror/language'
+import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
+import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
+import { closeBrackets, autocompletion, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
 import { json } from '@codemirror/lang-json'
 import { xml } from '@codemirror/lang-xml'
 import { html } from '@codemirror/lang-html'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { syntaxHighlighting, HighlightStyle, defaultHighlightStyle } from '@codemirror/language'
+import { tags } from '@lezer/highlight'
 
 const props = defineProps<{
   body: string
@@ -71,12 +80,66 @@ const isHTML = computed(() =>
   props.contentType.includes('html')
 )
 
+// Light mode highlight style for JSON/XML/HTML
+const lightHighlightStyle = HighlightStyle.define([
+  { tag: tags.string, color: '#032f62' },
+  { tag: tags.number, color: '#005cc5' },
+  { tag: tags.bool, color: '#d73a49' },
+  { tag: tags.null, color: '#d73a49' },
+  { tag: tags.propertyName, color: '#22863a' },
+  { tag: tags.separator, color: '#24292e' },
+  { tag: tags.squareBracket, color: '#24292e' },
+  { tag: tags.brace, color: '#24292e' },
+  // XML/HTML tags
+  { tag: tags.tagName, color: '#22863a' },
+  { tag: tags.attributeName, color: '#6f42c1' },
+  { tag: tags.attributeValue, color: '#032f62' },
+  { tag: tags.angleBracket, color: '#24292e' },
+  { tag: tags.content, color: '#24292e' },
+  { tag: tags.comment, color: '#6a737d', fontStyle: 'italic' },
+])
+
+const lightEditorTheme = EditorView.theme({
+  '&': { backgroundColor: '#ffffff' },
+  '.cm-content': { caretColor: '#24292e' },
+  '.cm-cursor': { borderLeftColor: '#24292e' },
+  '.cm-gutters': { backgroundColor: '#f5f5f5', color: '#6e7781', borderRight: '1px solid #e5e5e5' },
+  '.cm-activeLineGutter': { backgroundColor: '#e8e8e8' },
+  '.cm-activeLine': { backgroundColor: '#f0f0f0' },
+  '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': { backgroundColor: '#b4d7ff' },
+}, { dark: false })
+
 function createEditor() {
   if (!editorContainer.value) return
   
+  // Build extensions manually (no basicSetup to avoid defaultHighlightStyle conflict)
   const extensions = [
-    basicSetup,
+    // Core functionality
+    lineNumbers(),
+    highlightActiveLineGutter(),
+    highlightSpecialChars(),
+    history(),
+    foldGutter(),
+    drawSelection(),
+    dropCursor(),
+    EditorState.allowMultipleSelections.of(true),
+    indentOnInput(),
+    bracketMatching(),
+    closeBrackets(),
+    autocompletion(),
+    rectangularSelection(),
+    crosshairCursor(),
+    highlightActiveLine(),
+    highlightSelectionMatches(),
     EditorState.readOnly.of(true),
+    keymap.of([
+      ...closeBracketsKeymap,
+      ...defaultKeymap,
+      ...searchKeymap,
+      ...historyKeymap,
+      ...foldKeymap,
+      ...completionKeymap,
+    ]),
   ]
   
   // Add language support based on content type
@@ -88,9 +151,13 @@ function createEditor() {
     extensions.push(html())
   }
   
-  // Add dark theme if needed
+  // Add theme based on current mode
   if (effectiveTheme.value === 'dark') {
     extensions.push(oneDark)
+  } else {
+    // Light mode: use custom GitHub-style highlight with fallback
+    extensions.push(syntaxHighlighting(lightHighlightStyle, { fallback: true }))
+    extensions.push(lightEditorTheme)
   }
   
   let content = props.body

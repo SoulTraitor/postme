@@ -70,6 +70,15 @@ const historyStore = useHistoryStore()
 
 const effectiveTheme = computed(() => appState.effectiveTheme)
 
+// Sync dark class to <html> element for CSS selectors to work with teleported modals
+watch(effectiveTheme, (theme) => {
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+}, { immediate: true })
+
 // Resize handling
 const isResizing = ref(false)
 

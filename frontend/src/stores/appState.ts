@@ -23,6 +23,7 @@ export const useAppStateStore = defineStore('appState', () => {
   const autoLocateSidebar = ref(true)
   const useSystemProxy = ref(true)
   const requestPanelTab = ref<'params' | 'headers' | 'body'>('params')
+  const modalOpenCount = ref(0)
   
   // Window state
   const windowWidth = ref(1200)
@@ -50,6 +51,8 @@ export const useAppStateStore = defineStore('appState', () => {
     }
     return theme.value
   })
+
+  const isModalOpen = computed(() => modalOpenCount.value > 0)
 
   // Apply theme to document
   watch(effectiveTheme, (newTheme) => {
@@ -95,6 +98,14 @@ export const useAppStateStore = defineStore('appState', () => {
   // Toggle layout direction
   function toggleLayoutDirection() {
     layoutDirection.value = layoutDirection.value === 'horizontal' ? 'vertical' : 'horizontal'
+  }
+
+  function addModalOpen() {
+    modalOpenCount.value += 1
+  }
+
+  function removeModalOpen() {
+    modalOpenCount.value = Math.max(0, modalOpenCount.value - 1)
   }
 
   // Get sidebar item expanded state
@@ -195,6 +206,10 @@ export const useAppStateStore = defineStore('appState', () => {
     autoLocateSidebar,
     useSystemProxy,
     requestPanelTab,
+    modalOpenCount,
+    isModalOpen,
+    addModalOpen,
+    removeModalOpen,
     windowWidth,
     windowHeight,
     windowX,

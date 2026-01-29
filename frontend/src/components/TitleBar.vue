@@ -1,6 +1,6 @@
 <template>
   <div 
-    class="h-10 flex items-center justify-between px-3 border-b select-none wails-drag"
+    class="h-10 flex items-center justify-between px-3 border-b select-none wails-drag relative z-50"
     :class="[
       effectiveTheme === 'dark' 
         ? 'bg-dark-surface border-dark-border text-white' 

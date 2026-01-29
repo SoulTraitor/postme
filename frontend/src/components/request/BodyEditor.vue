@@ -94,7 +94,7 @@
       <div 
         ref="editorContainer" 
         class="h-full min-h-[200px] rounded-md border overflow-hidden"
-        :class="effectiveTheme === 'dark' ? 'border-dark-border' : 'border-light-border'"
+        :class="effectiveTheme === 'dark' ? 'border-dark-border bg-[#282c34]' : 'border-light-border bg-white'"
       />
     </div>
     
@@ -107,13 +107,18 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStateStore } from '@/stores/appState'
-import { EditorView, basicSetup } from 'codemirror'
-import { EditorState } from '@codemirror/state'
-import { keymap } from '@codemirror/view'
+import { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine, keymap } from '@codemirror/view'
+import { EditorState, Prec } from '@codemirror/state'
+import { foldGutter, indentOnInput, bracketMatching, foldKeymap } from '@codemirror/language'
+import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
+import { highlightSelectionMatches, search, searchKeymap, openSearchPanel } from '@codemirror/search'
+import { closeBrackets, autocompletion, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
+import { lintKeymap } from '@codemirror/lint'
 import { json } from '@codemirror/lang-json'
 import { xml } from '@codemirror/lang-xml'
 import { oneDark } from '@codemirror/theme-one-dark'
-import { search, openSearchPanel } from '@codemirror/search'
+import { syntaxHighlighting, HighlightStyle, defaultHighlightStyle } from '@codemirror/language'
+import { tags } from '@lezer/highlight'
 import { emitKeyboardAction } from '@/composables/useKeyboardActions'
 import KeyValueEditor from '@/components/common/KeyValueEditor.vue'
 import { DocumentArrowUpIcon, XMarkIcon } from '@heroicons/vue/24/outline'
@@ -141,6 +146,25 @@ const bodyTypes = [
   { value: 'xml', label: 'XML' },
   { value: 'text', label: 'Text' },
 ]
+
+// Light mode highlight style for JSON/XML
+const lightHighlightStyle = HighlightStyle.define([
+  { tag: tags.string, color: '#032f62' },
+  { tag: tags.number, color: '#005cc5' },
+  { tag: tags.bool, color: '#d73a49' },
+  { tag: tags.null, color: '#d73a49' },
+  { tag: tags.propertyName, color: '#22863a' },
+  { tag: tags.separator, color: '#24292e' },
+  { tag: tags.squareBracket, color: '#24292e' },
+  { tag: tags.brace, color: '#24292e' },
+  // XML tags
+  { tag: tags.tagName, color: '#22863a' },
+  { tag: tags.attributeName, color: '#6f42c1' },
+  { tag: tags.attributeValue, color: '#032f62' },
+  { tag: tags.angleBracket, color: '#24292e' },
+  { tag: tags.content, color: '#24292e' },
+  { tag: tags.comment, color: '#6a737d', fontStyle: 'italic' },
+])
 
 const editorContainer = ref<HTMLElement | null>(null)
 let editor: EditorView | null = null
@@ -207,8 +231,9 @@ function formatBody() {
 function createEditor() {
   if (!editorContainer.value || props.bodyType === 'none' || props.bodyType === 'form-data' || props.bodyType === 'x-www-form-urlencoded' || props.bodyType === 'binary') return
   
+  // Build extensions manually (no basicSetup to avoid defaultHighlightStyle)
   const extensions = [
-    // Custom keymap FIRST to intercept before basicSetup
+    // Custom keymap first
     keymap.of([
       {
         key: 'Ctrl-Enter',
@@ -235,21 +260,46 @@ function createEditor() {
       },
       {
         key: 'Ctrl-Shift-f',
-        run: (view: EditorView) => {
+        run: () => {
           formatBody()
           return true
         },
       },
       {
         key: 'Mod-Shift-f',
-        run: (view: EditorView) => {
+        run: () => {
           formatBody()
           return true
         },
       },
     ]),
-    basicSetup,
+    // Core functionality (from basicSetup but without defaultHighlightStyle)
+    lineNumbers(),
+    highlightActiveLineGutter(),
+    highlightSpecialChars(),
+    history(),
+    foldGutter(),
+    drawSelection(),
+    dropCursor(),
+    EditorState.allowMultipleSelections.of(true),
+    indentOnInput(),
+    bracketMatching(),
+    closeBrackets(),
+    autocompletion(),
+    rectangularSelection(),
+    crosshairCursor(),
+    highlightActiveLine(),
+    highlightSelectionMatches(),
     search({ top: true }),
+    keymap.of([
+      ...closeBracketsKeymap,
+      ...defaultKeymap,
+      ...searchKeymap,
+      ...historyKeymap,
+      ...foldKeymap,
+      ...completionKeymap,
+      ...lintKeymap,
+    ]),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
         emit('update:body', update.state.doc.toString())
@@ -257,16 +307,29 @@ function createEditor() {
     }),
   ]
   
-  // Add language support
+  // Add language support FIRST (before highlighting)
   if (props.bodyType === 'json') {
     extensions.push(json())
   } else if (props.bodyType === 'xml') {
     extensions.push(xml())
   }
   
-  // Add dark theme if needed
+  // Add theme based on current mode
   if (effectiveTheme.value === 'dark') {
     extensions.push(oneDark)
+  } else {
+    // Light mode: use custom GitHub-style highlight with fallback
+    extensions.push(syntaxHighlighting(lightHighlightStyle, { fallback: true }))
+    // Add light mode editor theme
+    extensions.push(EditorView.theme({
+      '&': { backgroundColor: '#ffffff' },
+      '.cm-content': { caretColor: '#24292e' },
+      '.cm-cursor': { borderLeftColor: '#24292e' },
+      '.cm-gutters': { backgroundColor: '#f5f5f5', color: '#6e7781', borderRight: '1px solid #e5e5e5' },
+      '.cm-activeLineGutter': { backgroundColor: '#e8e8e8' },
+      '.cm-activeLine': { backgroundColor: '#f0f0f0' },
+      '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': { backgroundColor: '#b4d7ff' },
+    }, { dark: false }))
   }
   
   editor = new EditorView({

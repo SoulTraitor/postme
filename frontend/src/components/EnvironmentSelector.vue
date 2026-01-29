@@ -22,7 +22,7 @@
       leave-to-class="transform scale-95 opacity-0"
     >
       <MenuItems
-        class="absolute right-0 mt-1 w-48 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+        class="absolute right-0 mt-1 w-48 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]"
         :class="[
           effectiveTheme === 'dark'
             ? 'bg-dark-elevated'

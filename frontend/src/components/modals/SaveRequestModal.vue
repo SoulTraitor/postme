@@ -9,7 +9,7 @@
         leave-from="opacity-100"
         leave-to="opacity-0"
       >
-        <div class="fixed inset-0 bg-black/50" />
+        <div class="fixed inset-0 modal-backdrop" aria-hidden="true" />
       </TransitionChild>
 
       <div class="fixed inset-0 overflow-y-auto">
@@ -249,8 +249,10 @@ const canSave = computed(() => {
 })
 
 // Reset when modal opens
-watch(() => props.isOpen, (isOpen) => {
+watch(() => props.isOpen, (isOpen, wasOpen) => {
+  if (isOpen === wasOpen) return
   if (isOpen) {
+    appState.addModalOpen()
     const tab = props.tabId ? tabsStore.getTab(props.tabId) : tabsStore.activeTab
     requestName.value = tab?.title !== 'Untitled' ? tab?.title || '' : ''
     
@@ -261,6 +263,8 @@ watch(() => props.isOpen, (isOpen) => {
       selectedCollection.value = null
     }
     selectedFolder.value = null
+  } else {
+    appState.removeModalOpen()
   }
 })
 

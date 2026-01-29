@@ -11,7 +11,7 @@
           leave-from="opacity-100"
           leave-to="opacity-0"
         >
-          <div class="fixed inset-0 bg-black/50" />
+          <div class="fixed inset-0 modal-backdrop" aria-hidden="true" />
         </TransitionChild>
 
         <div class="fixed inset-0 overflow-y-auto">
@@ -77,7 +77,7 @@
           leave-from="opacity-100"
           leave-to="opacity-0"
         >
-          <div class="fixed inset-0 bg-black/50" />
+          <div class="fixed inset-0 modal-backdrop" aria-hidden="true" />
         </TransitionChild>
 
         <div class="fixed inset-0 overflow-y-auto">
@@ -147,7 +147,7 @@
           leave-from="opacity-100"
           leave-to="opacity-0"
         >
-          <div class="fixed inset-0 bg-black/50" />
+          <div class="fixed inset-0 modal-backdrop" aria-hidden="true" />
         </TransitionChild>
 
         <div class="fixed inset-0 overflow-y-auto">
@@ -206,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue'
 import { useAppStateStore } from '@/stores/appState'
 
@@ -313,6 +313,17 @@ const modalAPI = {
   input: showInput,
   select: showSelect,
 }
+
+const anyModalOpen = computed(() => confirmModal.open || inputModal.open || selectModal.open)
+
+watch(anyModalOpen, (isOpen, wasOpen) => {
+  if (isOpen === wasOpen) return
+  if (isOpen) {
+    appState.addModalOpen()
+  } else {
+    appState.removeModalOpen()
+  }
+})
 
 onMounted(() => {
   (window as any).$modal = modalAPI

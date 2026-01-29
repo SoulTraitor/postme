@@ -9,7 +9,7 @@
         leave-from="opacity-100"
         leave-to="opacity-0"
       >
-        <div class="fixed inset-0 bg-black/50" />
+        <div class="fixed inset-0 modal-backdrop" aria-hidden="true" />
       </TransitionChild>
 
       <div class="fixed inset-0 overflow-y-auto">
@@ -266,10 +266,14 @@ watch(selectedEnvId, async (id) => {
 })
 
 // Initialize when modal opens
-watch(() => props.isOpen, (isOpen) => {
+watch(() => props.isOpen, (isOpen, wasOpen) => {
+  if (isOpen === wasOpen) return
   if (isOpen) {
+    appState.addModalOpen()
     selectedEnvId.value = null
     currentVariables.value = [...envStore.globalVariables.map(v => ({ ...v }))]
+  } else {
+    appState.removeModalOpen()
   }
 })
 
