@@ -80,23 +80,23 @@ const isHTML = computed(() =>
   props.contentType.includes('html')
 )
 
-// Light mode highlight style for JSON/XML/HTML
+// Light mode highlight style for JSON/XML/HTML (brighter colors for better visibility)
 const lightHighlightStyle = HighlightStyle.define([
-  { tag: tags.string, color: '#032f62' },
-  { tag: tags.number, color: '#005cc5' },
-  { tag: tags.bool, color: '#d73a49' },
-  { tag: tags.null, color: '#d73a49' },
-  { tag: tags.propertyName, color: '#22863a' },
-  { tag: tags.separator, color: '#24292e' },
-  { tag: tags.squareBracket, color: '#24292e' },
-  { tag: tags.brace, color: '#24292e' },
+  { tag: tags.string, color: '#f97316' },      // Orange for strings
+  { tag: tags.number, color: '#0d6efd' },      // Blue for numbers
+  { tag: tags.bool, color: '#eab308' },        // Yellow for booleans
+  { tag: tags.null, color: '#eab308' },        // Yellow for null
+  { tag: tags.propertyName, color: '#22c55e' }, // Green for property names
+  { tag: tags.separator, color: '#64748b' },
+  { tag: tags.squareBracket, color: '#64748b' },
+  { tag: tags.brace, color: '#64748b' },
   // XML/HTML tags
-  { tag: tags.tagName, color: '#22863a' },
-  { tag: tags.attributeName, color: '#6f42c1' },
-  { tag: tags.attributeValue, color: '#032f62' },
-  { tag: tags.angleBracket, color: '#24292e' },
-  { tag: tags.content, color: '#24292e' },
-  { tag: tags.comment, color: '#6a737d', fontStyle: 'italic' },
+  { tag: tags.tagName, color: '#22c55e' },     // Green for tag names
+  { tag: tags.attributeName, color: '#a855f7' }, // Light purple for attributes
+  { tag: tags.attributeValue, color: '#f97316' },
+  { tag: tags.angleBracket, color: '#64748b' },
+  { tag: tags.content, color: '#475569' },
+  { tag: tags.comment, color: '#94a3b8', fontStyle: 'italic' },
 ])
 
 const lightEditorTheme = EditorView.theme({

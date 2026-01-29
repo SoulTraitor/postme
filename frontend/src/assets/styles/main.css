@@ -99,10 +99,6 @@ html.dark .cm-searchMatch-selected {
 /* CodeMirror light mode - backgrounds only, DO NOT set text color here */
 html:not(.dark) .cm-editor {
   background-color: #ffffff;
-  /* Force GPU compositing to fix WebView2 text rendering */
-  transform: translateZ(0);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
 }
 
 html:not(.dark) .cm-editor .cm-scroller {
@@ -111,9 +107,6 @@ html:not(.dark) .cm-editor .cm-scroller {
 
 html:not(.dark) .cm-editor .cm-content {
   background-color: #ffffff;
-  /* Disable subpixel antialiasing which causes color issues in WebView2 */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 html:not(.dark) .cm-editor .cm-line {
@@ -253,10 +246,3 @@ html:not(.dark) .cm-editor ::selection {
   background-color: #b4d7ff !important;
 }
 
-/* ========== Modal glow/shadow fix for light mode ========== */
-/* Force GPU compositing on content behind modal to prevent WebView2 text rendering artifacts */
-html:not(.dark) #app {
-  transform: translateZ(0);
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-}
