@@ -96,14 +96,20 @@ func main() {
 			appStateHandler.Init()
 			dialogHandler.SetContext(ctx)
 
-			// Restore window position if saved
+			// Restore window position if saved and valid
 			if savedState != nil && savedState.WindowX != nil && savedState.WindowY != nil {
-				runtime.WindowSetPosition(ctx, *savedState.WindowX, *savedState.WindowY)
+				x, y := *savedState.WindowX, *savedState.WindowY
+				// Only restore if position is reasonable (not negative or extremely large)
+				// This prevents invisible windows from bad saved state
+				if x >= -100 && x < 10000 && y >= -100 && y < 10000 {
+					runtime.WindowSetPosition(ctx, x, y)
+				}
 			}
 		},
 		OnBeforeClose: func(ctx context.Context) (prevent bool) {
 			// Save window state before closing (window is still valid here)
 			isMaximized := runtime.WindowIsMaximised(appCtx)
+			isMinimized := runtime.WindowIsMinimised(appCtx)
 			w, h := runtime.WindowGetSize(appCtx)
 			x, y := runtime.WindowGetPosition(appCtx)
 			
@@ -116,8 +122,8 @@ func main() {
 			// Update maximized state
 			currentState.WindowMaximized = isMaximized
 			
-			// Save size/position only when not maximized
-			if !isMaximized && w > 0 && h > 0 {
+			// Save size/position only when normal (not maximized/minimized) and size is valid
+			if !isMaximized && !isMinimized && w >= 800 && h >= 600 && x >= -100 && y >= -100 {
 				currentState.WindowWidth = w
 				currentState.WindowHeight = h
 				currentState.WindowX = &x
