@@ -2,24 +2,28 @@
   <Teleport to="body">
     <div class="fixed top-4 right-4 z-50 space-y-2">
       <TransitionGroup
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="transform translate-x-full opacity-0"
-        enter-to-class="transform translate-x-0 opacity-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="transform translate-x-0 opacity-100"
-        leave-to-class="transform translate-x-full opacity-0"
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="transform translate-x-full scale-95 opacity-0"
+        enter-to-class="transform translate-x-0 scale-100 opacity-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="transform translate-x-0 scale-100 opacity-100"
+        leave-to-class="transform translate-x-8 scale-95 opacity-0"
       >
         <div
           v-for="toast in toasts"
           :key="toast.id"
-          class="flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg min-w-[200px]"
+          class="flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg min-w-[200px] backdrop-blur-sm"
           :class="toastClass(toast.type)"
         >
-          <component :is="toastIcon(toast.type)" class="w-5 h-5 flex-shrink-0" />
+          <component
+            :is="toastIcon(toast.type)"
+            class="w-5 h-5 flex-shrink-0"
+            :class="toast.type === 'success' ? 'animate-bounce-once' : ''"
+          />
           <span class="flex-1 text-sm">{{ toast.message }}</span>
           <button
             @click="removeToast(toast.id)"
-            class="p-0.5 rounded hover:bg-black/10"
+            class="p-0.5 rounded hover:bg-black/10 transition-colors"
           >
             <XMarkIcon class="w-4 h-4" />
           </button>

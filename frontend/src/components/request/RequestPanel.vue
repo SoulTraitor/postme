@@ -314,6 +314,12 @@ async function sendRequest() {
       responseStore.setTimeout(tab.id, appState.requestTimeout)
     } else {
       responseStore.setError(tab.id, errorMessage)
+
+      // Show error toast for network/connection errors
+      const toast = (window as any).$toast
+      if (toast) {
+        toast.error(errorMessage.length > 50 ? 'Request failed' : errorMessage)
+      }
     }
   }
 }

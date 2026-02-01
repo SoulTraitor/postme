@@ -23,8 +23,16 @@
     
     <!-- Response state: Loading -->
     <div v-else-if="responseState.status === 'loading'" class="flex-1 flex flex-col items-center justify-center text-gray-500">
-      <div class="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mb-4" />
-      <p>Sending request...</p>
+      <div class="relative mb-6">
+        <!-- Outer pulse ring -->
+        <div class="absolute inset-0 w-12 h-12 -m-2 rounded-full bg-accent/20 animate-ping"></div>
+        <!-- Spinner -->
+        <div class="relative w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+      </div>
+      <p class="text-lg font-medium mb-2" :class="effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'">
+        Sending request
+      </p>
+      <p class="text-sm">Please wait...</p>
     </div>
     
     <!-- Response state: Cancelled -->

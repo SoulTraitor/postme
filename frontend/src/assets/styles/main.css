@@ -246,6 +246,22 @@ html:not(.dark) .cm-editor ::selection {
   background-color: #b4d7ff !important;
 }
 
+/* ========== 自定义动画 ========== */
+
+/* Toast 成功图标单次弹跳动画 */
+@keyframes bounce-once {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.4s ease-out;
+}
+
 /* ========== JetBrains Mono 字体配置 ========== */
 
 /* CodeMirror 编辑器 */

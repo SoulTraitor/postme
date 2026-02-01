@@ -581,10 +581,20 @@ async function deleteCollection() {
   
   if (confirmed) {
     try {
+      const collectionName = selectedCollection.value.name
       await api.deleteCollection(selectedCollection.value.id)
       collectionStore.deleteCollection(selectedCollection.value.id)
+
+      const toast = (window as any).$toast
+      if (toast) {
+        toast.success(`Collection "${collectionName}" deleted`)
+      }
     } catch (error) {
       console.error('Failed to delete collection:', error)
+      const toast = (window as any).$toast
+      if (toast) {
+        toast.error('Failed to delete collection')
+      }
     }
   }
 }
@@ -625,10 +635,20 @@ async function deleteFolder() {
   
   if (confirmed) {
     try {
+      const folderName = selectedFolder.value.folder.name
       await api.deleteFolder(selectedFolder.value.folder.id)
       collectionStore.deleteFolder(selectedFolder.value.folder.id)
+
+      const toast = (window as any).$toast
+      if (toast) {
+        toast.success(`Folder "${folderName}" deleted`)
+      }
     } catch (error) {
       console.error('Failed to delete folder:', error)
+      const toast = (window as any).$toast
+      if (toast) {
+        toast.error('Failed to delete folder')
+      }
     }
   }
 }
@@ -672,23 +692,33 @@ async function deleteRequest() {
   if (confirmed) {
     try {
       const requestId = selectedRequest.value.id
+      const requestName = selectedRequest.value.name
       await api.deleteRequest(requestId)
       collectionStore.deleteRequest(requestId)
       // Close the tab if it's open
       tabsStore.closeTabByRequestId(requestId)
+
+      const toast = (window as any).$toast
+      if (toast) {
+        toast.success(`Request "${requestName}" deleted`)
+      }
     } catch (error) {
       console.error('Failed to delete request:', error)
+      const toast = (window as any).$toast
+      if (toast) {
+        toast.error('Failed to delete request')
+      }
     }
   }
 }
 
 async function duplicateRequest() {
   if (!selectedRequest.value) return
-  
+
   try {
     const duplicated = await api.duplicateRequest(selectedRequest.value.id)
     collectionStore.addRequest(duplicated)
-    
+
     // Open the duplicated request in a new tab
     tabsStore.openRequest(
       duplicated.id,
@@ -700,8 +730,17 @@ async function duplicateRequest() {
       duplicated.body,
       duplicated.bodyType
     )
+
+    const toast = (window as any).$toast
+    if (toast) {
+      toast.success(`Request duplicated as "${duplicated.name}"`)
+    }
   } catch (error) {
     console.error('Failed to duplicate request:', error)
+    const toast = (window as any).$toast
+    if (toast) {
+      toast.error('Failed to duplicate request')
+    }
   }
 }
 

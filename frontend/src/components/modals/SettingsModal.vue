@@ -265,13 +265,25 @@ async function save() {
       theme: localSettings.theme,
       layoutDirection: localSettings.layoutDirection,
     })
-    
+
     // Update HTTP client proxy setting
     await api.setUseSystemProxy(localSettings.useSystemProxy)
+
+    // Show success toast
+    const toast = (window as any).$toast
+    if (toast) {
+      toast.success('Settings saved successfully')
+    }
   } catch (error) {
     console.error('Failed to save settings:', error)
+
+    // Show error toast
+    const toast = (window as any).$toast
+    if (toast) {
+      toast.error('Failed to save settings')
+    }
   }
-  
+
   close()
 }
 </script>

@@ -1,9 +1,9 @@
 <template>
   <div
-    class="group flex items-center gap-1 px-3 py-1.5 border-r cursor-pointer min-w-0 max-w-[200px] relative"
+    class="group flex items-center gap-1 px-3 py-1.5 border-r cursor-pointer min-w-0 max-w-[200px] relative transition-all duration-200"
     :class="[
-      isActive 
-        ? (effectiveTheme === 'dark' ? 'bg-dark-surface' : 'bg-white')
+      isActive
+        ? (effectiveTheme === 'dark' ? 'bg-dark-surface shadow-md' : 'bg-white shadow-sm')
         : (effectiveTheme === 'dark' ? 'hover:bg-dark-hover' : 'hover:bg-light-hover'),
       effectiveTheme === 'dark' ? 'border-dark-border' : 'border-light-border'
     ]"
@@ -17,9 +17,9 @@
       class="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
     />
     <!-- Dirty indicator -->
-    <span 
-      v-if="tab.isDirty" 
-      class="w-2 h-2 rounded-full bg-accent flex-shrink-0"
+    <span
+      v-if="tab.isDirty"
+      class="w-2 h-2 rounded-full bg-accent flex-shrink-0 animate-pulse"
     />
     
     <!-- Method badge -->
@@ -31,10 +31,10 @@
     </span>
     
     <!-- Title -->
-    <span 
-      class="truncate text-sm flex-1 min-w-0"
+    <span
+      class="truncate text-sm flex-1 min-w-0 transition-opacity"
       :class="[
-        tab.isPreview ? 'italic' : '',
+        tab.isPreview ? 'italic opacity-70' : '',
         effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'
       ]"
     >

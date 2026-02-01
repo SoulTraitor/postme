@@ -1507,3 +1507,291 @@ if req.BodyType == "binary" && req.Body != "" {
     contentType = "application/octet-stream"
 }
 ```
+
+---
+
+## 30. UI 优化与视觉增强
+
+### 30.1 字体配置
+
+#### 30.1.1 等宽字体 - JetBrains Mono
+
+为提升代码和数据的可读性，应用使用 JetBrains Mono 等宽字体：
+
+**安装**：
+```bash
+npm install @fontsource/jetbrains-mono
+```
+
+**应用范围**：
+- CodeMirror 编辑器（13px，行高 1.6，禁用连字避免渲染问题）
+- URL 输入框（13px）
+- 键值对编辑器（12px）
+- 响应头值（12px）
+- 状态栏数值（12px）
+
+**连字设置**：
+```css
+/* 禁用连字，避免与语法高亮冲突 */
+.cm-editor {
+  font-variant-ligatures: none;
+}
+```
+
+### 30.2 按钮动效优化
+
+#### 30.2.1 Send 按钮
+
+**视觉增强**：
+- 添加 PaperAirplaneIcon 图标
+- 阴影效果：`shadow-md hover:shadow-lg`
+- 悬停动画：轻微上移 2px（`translateY(-2px)`）
+- GPU 加速：`will-change: transform` + `backface-visibility: hidden`
+- 子像素抗锯齿：`-webkit-font-smoothing: subpixel-antialiased`
+
+**技术要点**：
+- 使用 JS 控制 transform 而非 CSS hover，避免文字抖动
+- 明确指定 transition 属性（transform, box-shadow, background-color）
+
+#### 30.2.2 Cancel 按钮
+
+- 添加 XMarkIcon 图标
+- 红色主题：`bg-red-500 hover:bg-red-600`
+- 相同的上移动画和阴影效果
+
+#### 30.2.3 Update/Save 按钮
+
+- 仅阴影增强，无上移动画（避免亮色模式下视觉混淆）
+- `shadow-sm hover:shadow-md`
+
+### 30.3 状态码徽章设计
+
+#### 30.3.1 徽章样式
+
+状态码从纯文本改为徽章显示：
+
+**样式特点**：
+- 圆角徽章：`rounded-full`
+- 内边距：`px-3 py-1`
+- 带图标：成功显示 CheckCircleIcon，错误显示 XCircleIcon
+
+**颜色方案**：
+| 状态码范围 | 背景色（亮色） | 背景色（暗色） | 图标 |
+|-----------|--------------|--------------|------|
+| 2xx | 绿色 `bg-green-100` | `bg-green-900/30` | CheckCircleIcon |
+| 3xx | 蓝色 `bg-blue-100` | `bg-blue-900/30` | 无 |
+| 4xx | 黄色 `bg-yellow-100` | `bg-yellow-900/30` | XCircleIcon |
+| 5xx | 红色 `bg-red-100` | `bg-red-900/30` | XCircleIcon |
+
+### 30.4 Tab 视觉增强
+
+#### 30.4.1 活动状态
+
+- 活动 Tab 添加阴影提升：`shadow-md`（暗色）/ `shadow-sm`（亮色）
+- 平滑过渡动画：`transition-all duration-200`
+
+#### 30.4.2 状态指示
+
+**脏状态圆点**：
+- 脉冲动画：`animate-pulse`
+- 橙色圆点：`bg-accent`
+
+**预览模式**：
+- 斜体显示：`italic`
+- 半透明效果：`opacity-70`
+- 过渡动画：`transition-opacity`
+
+### 30.5 Toast 通知系统
+
+#### 30.5.1 动画效果
+
+**进入动画**（300ms）：
+- 从右侧滑入：`translate-x-full → translate-x-0`
+- 轻微缩放：`scale-95 → scale-100`
+- 淡入：`opacity-0 → opacity-100`
+
+**离开动画**（200ms）：
+- 轻微右移：`translate-x-0 → translate-x-8`
+- 轻微缩小：`scale-100 → scale-95`
+- 淡出：`opacity-100 → opacity-0`
+
+#### 30.5.2 成功图标动画
+
+成功类型 Toast 的 CheckCircleIcon 添加单次弹跳动画：
+
+```css
+@keyframes bounce-once {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.4s ease-out;
+}
+```
+
+#### 30.5.3 Toast 触发场景
+
+| 场景 | 类型 | 消息示例 |
+|------|------|---------|
+| 设置保存成功 | success | Settings saved successfully |
+| 设置保存失败 | error | Failed to save settings |
+| 删除集合成功 | success | Collection "XXX" deleted |
+| 删除文件夹成功 | success | Folder "XXX" deleted |
+| 删除请求成功 | success | Request "XXX" deleted |
+| 复制请求成功 | success | Request duplicated as "XXX" |
+| 请求执行错误 | error | Request failed / 错误消息 |
+| 环境变量重复 | error | Duplicate variable names: XXX |
+
+#### 30.5.4 视觉特性
+
+- 背景模糊：`backdrop-blur-sm`
+- 垂直堆叠：`space-y-2`
+- 自动消失：3 秒后自动移除
+- 手动关闭：支持点击 X 按钮关闭
+
+### 30.6 空状态设计
+
+#### 30.6.1 响应面板空状态
+
+**设计元素**：
+- 渐变光晕背景
+- 放大图标（16x16）
+- 分层文字：标题 + 描述
+- 快捷键提示：Ctrl+Enter
+
+**代码示例**：
+```vue
+<div class="relative">
+  <div class="absolute inset-0 bg-accent/5 blur-2xl rounded-full"></div>
+  <PaperAirplaneIcon class="w-16 h-16 mb-6 opacity-40 relative" />
+</div>
+<p class="text-lg font-medium mb-2">Ready to send</p>
+<p class="text-sm mb-4">Click Send to make a request</p>
+<div class="flex items-center gap-2 text-xs">
+  <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send
+</div>
+```
+
+### 30.7 加载动画
+
+#### 30.7.1 脉冲圆环设计
+
+**视觉层次**：
+- 外层：脉冲圆环（`animate-ping`，`bg-accent/20`）
+- 内层：旋转 spinner（`animate-spin`，`border-accent`）
+
+**文字优化**：
+- 标题：`text-lg font-medium`
+- 描述：`text-sm`
+
+### 30.8 窗口控制优化
+
+#### 30.8.1 最大化/恢复按钮
+
+**状态同步修复**：
+- 移除乐观更新，完全依赖 Wails 窗口事件
+- `wails:window-restored` 事件中检查实际最大化状态
+- 确保图标始终与窗口状态一致
+
+**图标显示**：
+- 最大化状态：显示 Square2StackIcon（恢复图标）
+- 非最大化状态：显示 StopIcon（最大化图标）
+
+### 30.9 性能优化技巧
+
+#### 30.9.1 GPU 加速
+
+关键动画元素使用 GPU 加速属性：
+```css
+will-change: transform;
+backface-visibility: hidden;
+-webkit-font-smoothing: subpixel-antialiased;
+```
+
+#### 30.9.2 过渡属性优化
+
+避免 `transition-all`，明确指定过渡属性：
+```css
+transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+```
+
+#### 30.9.3 字体渲染
+
+**连字问题**：
+- CodeMirror 中 XML 编辑时，连字（如 `<==`）会导致字符显示异常
+- 解决方案：`font-variant-ligatures: none`
+
+**抗锯齿**：
+- 使用 `subpixel-antialiased` 保证文字清晰度
+- 避免 transform 导致的模糊
+
+### 30.10 设计原则
+
+1. **渐进式增强**：基础功能正常，动画作为增强
+2. **性能优先**：避免过度动画影响性能
+3. **一致性**：主题色（橙色 `#d97706`）贯穿所有交互
+4. **反馈及时**：操作立即响应，状态变化清晰
+5. **适度克制**：Toast 只用于关键操作，避免干扰
+
+---
+
+## 31. Bug 修复记录
+
+### 31.1 Tab 脏状态检测
+
+**问题**：GET 请求修改 body 内容不触发脏状态
+
+**原因**：
+- `computeDirty` 函数只在当前和原始方法都支持 body 时才比较
+- GET 不支持 body，导致跳过检测
+
+**修复**：
+```typescript
+// 移除方法类型限制，始终检测 body 变化
+if (tab.body !== orig.body) return true
+if (tab.bodyType !== orig.bodyType) return true
+```
+
+### 31.2 字体连字渲染问题
+
+**问题**：XML 中输入 `<==` 时，`<` 字符消失
+
+**原因**：
+- JetBrains Mono 连字功能将 `<==` 渲染成单个符号
+- 与 CodeMirror 的 XML 语法高亮冲突
+
+**修复**：
+```css
+.cm-editor {
+  font-variant-ligatures: none;
+}
+```
+
+### 31.3 按钮动画抖动
+
+**问题**：Send 按钮悬停时文字抖动
+
+**原因**：
+- `hover:scale-105` 缩放整个按钮，导致文字像素对齐问题
+
+**修复**：
+- 改用 `translateY(-2px)` 上移动画
+- 添加 GPU 加速和子像素抗锯齿
+
+### 31.4 窗口状态图标错误
+
+**问题**：最大化 → 最小化 → 恢复后，图标显示错误
+
+**原因**：
+- TitleBar 中的乐观更新导致状态不一致
+- 从最小化恢复时，实际窗口状态与 store 状态不同步
+
+**修复**：
+- 移除 TitleBar 的乐观更新
+- 完全依赖 Wails 窗口事件更新状态
+- `wails:window-restored` 事件中检查实际最大化状态
+
+---
+
+*文档最后更新：2026-02-01*

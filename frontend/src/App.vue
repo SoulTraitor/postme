@@ -201,58 +201,68 @@ async function loadData() {
     environmentStore.setActiveEnv(state.activeEnvId)
     historyStore.setHistory(history)
 
-    // Load tab sessions
+    // Load tab sessions - show UI immediately, load original state in background
     const sessions = await api.getTabSessions()
     if (sessions.length > 0) {
-      // Build tabs with original state from DB if dirty
-      const tabs = await Promise.all(sessions.map(async s => {
-        let originalState = null
-        
-        if (s.requestId) {
-          // Fetch original state from DB for this request
-          try {
-            const originalRequest = await api.getRequest(s.requestId)
-            originalState = {
-              method: originalRequest.method,
-              url: originalRequest.url,
-              headers: [...originalRequest.headers],
-              params: [...originalRequest.params],
-              body: originalRequest.body,
-              bodyType: originalRequest.bodyType,
-            }
-          } catch {
-            // Request might have been deleted, use session data as original
-            originalState = {
-              method: s.method,
-              url: s.url,
-              headers: [...s.headers],
-              params: [...s.params],
-              body: s.body,
-              bodyType: s.bodyType,
-            }
-          }
-        }
-        
-        return {
-          id: s.tabId,
-          requestId: s.requestId,
-          title: s.title,
-          method: s.method,
-          url: s.url,
-          headers: s.headers,
-          params: s.params,
-          body: s.body,
-          bodyType: s.bodyType,
-          isDirty: s.isDirty,
-          isPreview: false,
-          originalState,
-        }
+      // Build tabs without original state first (fast UI display)
+      const tabs = sessions.map(s => ({
+        id: s.tabId,
+        requestId: s.requestId,
+        title: s.title,
+        method: s.method,
+        url: s.url,
+        headers: s.headers,
+        params: s.params,
+        body: s.body,
+        bodyType: s.bodyType,
+        isDirty: s.isDirty,
+        isPreview: false,
+        originalState: null, // Load in background
       }))
+
+      // Initialize tabs immediately for fast UI
       tabsStore.init(tabs)
       const activeSession = sessions.find(s => s.isActive)
       if (activeSession) {
         tabsStore.setActiveTab(activeSession.tabId)
       }
+
+      // Load original states in background (for dirty detection)
+      Promise.all(sessions.map(async (s, index) => {
+        if (s.requestId) {
+          try {
+            const originalRequest = await api.getRequest(s.requestId)
+            const tab = tabsStore.getTab(s.tabId)
+            if (tab) {
+              tab.originalState = {
+                method: originalRequest.method,
+                url: originalRequest.url,
+                headers: [...originalRequest.headers],
+                params: [...originalRequest.params],
+                body: originalRequest.body,
+                bodyType: originalRequest.bodyType,
+              }
+              // Recalculate dirty state with original data
+              tab.isDirty = s.isDirty
+            }
+          } catch {
+            // Request deleted, use session data as original
+            const tab = tabsStore.getTab(s.tabId)
+            if (tab) {
+              tab.originalState = {
+                method: s.method,
+                url: s.url,
+                headers: [...s.headers],
+                params: [...s.params],
+                body: s.body,
+                bodyType: s.bodyType,
+              }
+            }
+          }
+        }
+      })).catch(err => {
+        console.error('Failed to load original states:', err)
+      })
     } else {
       tabsStore.init()
     }
@@ -449,18 +459,33 @@ onMounted(() => {
   // @ts-ignore - Wails runtime
   if (window.runtime && window.runtime.EventsOn) {
     // @ts-ignore
-    window.runtime.EventsOn('wails:window-maximised', () => {
-      appState.windowMaximized = true
+    window.runtime.EventsOn('wails:window-maximised', async () => {
+      // Verify actual state
+      try {
+        // @ts-ignore
+        const isMax = await window.runtime.WindowIsMaximised()
+        appState.windowMaximized = isMax
+      } catch {
+        appState.windowMaximized = true
+      }
       immediateSave()
     })
     // @ts-ignore
-    window.runtime.EventsOn('wails:window-restored', () => {
-      appState.windowMaximized = false
+    window.runtime.EventsOn('wails:window-restored', async () => {
+      // Don't update maximized state here - let maximised/unmaximised events handle it
+      // Just update window position/size
       updateWindowState(true)
     })
     // @ts-ignore
-    window.runtime.EventsOn('wails:window-unmaximised', () => {
-      appState.windowMaximized = false
+    window.runtime.EventsOn('wails:window-unmaximised', async () => {
+      // Verify actual state
+      try {
+        // @ts-ignore
+        const isMax = await window.runtime.WindowIsMaximised()
+        appState.windowMaximized = isMax
+      } catch {
+        appState.windowMaximized = false
+      }
       updateWindowState(true)
     })
   }
