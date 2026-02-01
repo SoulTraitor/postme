@@ -2,25 +2,30 @@
   <Teleport to="body">
     <!-- Confirm Modal -->
     <TransitionRoot :show="confirmModal.open" as="template">
-      <Dialog as="div" class="relative z-[60]" @close="confirmModal.onCancel?.()">
+      <Dialog as="div" class="relative z-[9999]" :initialFocus="cancelButtonRef" @close="confirmModal.onCancel?.()">
         <TransitionChild
-          enter="ease-out duration-200"
+          enter="ease-out duration-300"
           enter-from="opacity-0"
           enter-to="opacity-100"
-          leave="ease-in duration-150"
+          leave="ease-in duration-200"
           leave-from="opacity-100"
           leave-to="opacity-0"
+          as="template"
         >
-          <div class="fixed inset-0 modal-backdrop" aria-hidden="true" />
+          <div
+            class="fixed inset-0 modal-backdrop backdrop-blur-sm"
+            style="transition: opacity 300ms ease-out, backdrop-filter 300ms ease-out"
+            aria-hidden="true"
+          />
         </TransitionChild>
 
         <div class="fixed inset-0 overflow-y-auto">
           <div class="flex min-h-full items-center justify-center p-4">
             <TransitionChild
-              enter="ease-out duration-200"
-              enter-from="opacity-0 scale-95"
+              enter="ease-out duration-300"
+              enter-from="opacity-0 scale-90"
               enter-to="opacity-100 scale-100"
-              leave="ease-in duration-150"
+              leave="ease-in duration-200"
               leave-from="opacity-100 scale-100"
               leave-to="opacity-0 scale-95"
             >
@@ -68,25 +73,30 @@
     
     <!-- Input Modal -->
     <TransitionRoot :show="inputModal.open" as="template">
-      <Dialog as="div" class="relative z-[60]" @close="inputModal.onCancel?.()">
+      <Dialog as="div" class="relative z-[9999]" @close="inputModal.onCancel?.()">
         <TransitionChild
-          enter="ease-out duration-200"
+          enter="ease-out duration-300"
           enter-from="opacity-0"
           enter-to="opacity-100"
-          leave="ease-in duration-150"
+          leave="ease-in duration-200"
           leave-from="opacity-100"
           leave-to="opacity-0"
+          as="template"
         >
-          <div class="fixed inset-0 modal-backdrop" aria-hidden="true" />
+          <div
+            class="fixed inset-0 modal-backdrop backdrop-blur-sm"
+            style="transition: opacity 300ms ease-out, backdrop-filter 300ms ease-out"
+            aria-hidden="true"
+          />
         </TransitionChild>
 
         <div class="fixed inset-0 overflow-y-auto">
           <div class="flex min-h-full items-center justify-center p-4">
             <TransitionChild
-              enter="ease-out duration-200"
-              enter-from="opacity-0 scale-95"
+              enter="ease-out duration-300"
+              enter-from="opacity-0 scale-90"
               enter-to="opacity-100 scale-100"
-              leave="ease-in duration-150"
+              leave="ease-in duration-200"
               leave-from="opacity-100 scale-100"
               leave-to="opacity-0 scale-95"
             >
@@ -138,25 +148,30 @@
     
     <!-- Select Modal -->
     <TransitionRoot :show="selectModal.open" as="template">
-      <Dialog as="div" class="relative z-[60]" @close="selectModal.onCancel?.()">
+      <Dialog as="div" class="relative z-[9999]" @close="selectModal.onCancel?.()">
         <TransitionChild
-          enter="ease-out duration-200"
+          enter="ease-out duration-300"
           enter-from="opacity-0"
           enter-to="opacity-100"
-          leave="ease-in duration-150"
+          leave="ease-in duration-200"
           leave-from="opacity-100"
           leave-to="opacity-0"
+          as="template"
         >
-          <div class="fixed inset-0 modal-backdrop" aria-hidden="true" />
+          <div
+            class="fixed inset-0 modal-backdrop backdrop-blur-sm"
+            style="transition: opacity 300ms ease-out, backdrop-filter 300ms ease-out"
+            aria-hidden="true"
+          />
         </TransitionChild>
 
         <div class="fixed inset-0 overflow-y-auto">
           <div class="flex min-h-full items-center justify-center p-4">
             <TransitionChild
-              enter="ease-out duration-200"
-              enter-from="opacity-0 scale-95"
+              enter="ease-out duration-300"
+              enter-from="opacity-0 scale-90"
               enter-to="opacity-100 scale-100"
-              leave="ease-in duration-150"
+              leave="ease-in duration-200"
               leave-from="opacity-100 scale-100"
               leave-to="opacity-0 scale-95"
             >
@@ -255,14 +270,17 @@ function showConfirm(options: {
     confirmModal.confirmText = options.confirmText || 'Confirm'
     confirmModal.danger = options.danger || false
     confirmModal.onConfirm = () => {
+      console.log('[ModalContainer] Confirm clicked')
       confirmModal.open = false
       resolve(true)
     }
     confirmModal.onCancel = () => {
+      console.log('[ModalContainer] Cancel clicked or ESC pressed')
       confirmModal.open = false
       resolve(false)
     }
     confirmModal.open = true
+    console.log('[ModalContainer] Confirm modal opened')
   })
 }
 
@@ -325,13 +343,40 @@ watch(anyModalOpen, (isOpen, wasOpen) => {
   }
 })
 
+// Manual ESC key handling for confirm/input/select modals
+function handleEscKey(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    console.log('[ModalContainer] ESC key detected, anyModalOpen:', anyModalOpen.value)
+    if (confirmModal.open) {
+      console.log('[ModalContainer] ESC key closing confirm modal')
+      event.preventDefault()
+      event.stopPropagation()
+      confirmModal.onCancel?.()
+    } else if (inputModal.open) {
+      console.log('[ModalContainer] ESC key closing input modal')
+      event.preventDefault()
+      event.stopPropagation()
+      inputModal.onCancel?.()
+    } else if (selectModal.open) {
+      console.log('[ModalContainer] ESC key closing select modal')
+      event.preventDefault()
+      event.stopPropagation()
+      selectModal.onCancel?.()
+    }
+  }
+}
+
 onMounted(() => {
   (window as any).$modal = modalAPI
+  // Listen at capture phase with high priority
+  document.addEventListener('keydown', handleEscKey, true)
 })
 
 onUnmounted(() => {
   delete (window as any).$modal
+  document.removeEventListener('keydown', handleEscKey, true)
 })
 
 defineExpose(modalAPI)
 </script>
+

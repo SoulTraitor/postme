@@ -30,8 +30,8 @@
     </div>
     
     <!-- Body content -->
-    <div 
-      class="flex-1 overflow-auto"
+    <div
+      class="flex-1 overflow-auto cursor-default"
       :class="effectiveTheme === 'dark' ? 'bg-[#282c34]' : 'bg-white'"
     >
       <div ref="editorContainer" class="h-full" />

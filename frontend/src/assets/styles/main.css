@@ -301,3 +301,16 @@ html:not(.dark) .cm-editor ::selection {
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* ========== Modal backdrop blur transition ========== */
+.modal-backdrop {
+  transition: opacity 300ms ease-out, backdrop-filter 300ms ease-out;
+}
+
+.blur-none {
+  backdrop-filter: blur(0px);
+}
+
+.blur-active {
+  backdrop-filter: blur(4px);
+}
+

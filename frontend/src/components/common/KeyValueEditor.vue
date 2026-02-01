@@ -1,10 +1,20 @@
 <template>
   <div class="space-y-2">
-    <div 
-      v-for="(item, index) in localItems" 
-      :key="index"
-      class="flex items-center gap-2"
+    <TransitionGroup
+      enter-active-class="transition duration-200"
+      enter-from-class="opacity-0 scale-95"
+      enter-to-class="opacity-100 scale-100"
     >
+      <div
+        v-for="(item, index) in localItems"
+        :key="`item-${index}`"
+        class="flex items-center gap-2 rounded-md px-2 py-1 -mx-2 transition-colors"
+        :class="[
+          item.enabled
+            ? (effectiveTheme === 'dark' ? 'hover:bg-dark-hover/50' : 'hover:bg-light-hover/50')
+            : 'opacity-50'
+        ]"
+      >
       <!-- Enabled checkbox -->
       <input
         type="checkbox"
@@ -86,12 +96,13 @@
       <!-- Delete button -->
       <button
         @click="removeItem(index)"
-        class="p-1.5 rounded-md transition-colors"
+        class="p-1.5 rounded-md transition-all active:scale-90"
         :class="effectiveTheme === 'dark' ? 'hover:bg-dark-hover text-gray-400 hover:text-red-400' : 'hover:bg-light-hover text-gray-500 hover:text-red-500'"
       >
         <TrashIcon class="w-4 h-4" />
       </button>
     </div>
+    </TransitionGroup>
     
     <!-- Add new item row -->
     <div class="flex items-center gap-2">
@@ -173,7 +184,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, TransitionGroup } from 'vue'
 import { TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 import { useAppStateStore } from '@/stores/appState'
 import type { KeyValue } from '@/types'

@@ -2,23 +2,28 @@
   <TransitionRoot :show="isOpen" as="template">
     <Dialog as="div" class="relative z-50" @close="close">
       <TransitionChild
-        enter="ease-out duration-200"
+        enter="ease-out duration-300"
         enter-from="opacity-0"
         enter-to="opacity-100"
-        leave="ease-in duration-150"
+        leave="ease-in duration-200"
         leave-from="opacity-100"
         leave-to="opacity-0"
+        as="template"
       >
-        <div class="fixed inset-0 modal-backdrop" aria-hidden="true" />
+        <div
+          class="fixed inset-0 modal-backdrop backdrop-blur-sm"
+          style="transition: opacity 300ms ease-out, backdrop-filter 300ms ease-out"
+          aria-hidden="true"
+        />
       </TransitionChild>
 
       <div class="fixed inset-0 overflow-y-auto">
         <div class="flex min-h-full items-center justify-center p-4">
           <TransitionChild
-            enter="ease-out duration-200"
-            enter-from="opacity-0 scale-95"
+            enter="ease-out duration-300"
+            enter-from="opacity-0 scale-90"
             enter-to="opacity-100 scale-100"
-            leave="ease-in duration-150"
+            leave="ease-in duration-200"
             leave-from="opacity-100 scale-100"
             leave-to="opacity-0 scale-95"
           >
@@ -222,7 +227,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue'
 import { PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { useAppStateStore } from '@/stores/appState'
@@ -412,7 +417,23 @@ async function saveCurrentEnv() {
 
 function close() {
   // Don't close if a nested modal (confirmation dialog) is open
-  if (isNestedModalOpen.value) return
+  console.log('[EnvironmentModal] close() called, isNestedModalOpen:', isNestedModalOpen.value)
+  if (isNestedModalOpen.value) {
+    console.log('[EnvironmentModal] Blocked: nested modal is open')
+    return
+  }
+  console.log('[EnvironmentModal] Closing...')
   emit('close')
 }
+
+// Handle ESC key: let it pass to confirm dialog, but prevent this modal from closing
+// The close() function will block closing when isNestedModalOpen is true
+onMounted(() => {
+  // No keyboard listener needed - just rely on close() blocking logic
+})
+
+onUnmounted(() => {
+  // Cleanup if needed
+})
 </script>
+

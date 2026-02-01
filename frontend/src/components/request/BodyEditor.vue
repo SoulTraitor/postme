@@ -331,7 +331,13 @@ function createEditor() {
       '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': { backgroundColor: '#b4d7ff' },
     }, { dark: false }))
   }
-  
+
+  // Set editor height to fill container
+  extensions.push(EditorView.theme({
+    '&': { height: '100%' },
+    '.cm-scroller': { overflow: 'auto' }
+  }))
+
   editor = new EditorView({
     state: EditorState.create({
       doc: props.body,

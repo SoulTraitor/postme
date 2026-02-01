@@ -22,17 +22,41 @@
           ]"
         >
           <!-- Request Panel -->
-          <RequestPanel class="flex-1 min-w-0 min-h-0" />
-          
-          <!-- Resizer -->
-          <div 
-            class="resizer"
-            :class="appState.layoutDirection === 'vertical' ? 'resizer-horizontal' : 'resizer-vertical'"
-            @mousedown="startResize"
+          <RequestPanel
+            class="min-w-0 min-h-0"
+            :style="{
+              flex: `0 0 ${appState.splitRatio}%`
+            }"
           />
-          
+
+          <!-- Resizer -->
+          <div
+            class="resizer relative group"
+            :class="[
+              appState.layoutDirection === 'vertical' ? 'resizer-horizontal' : 'resizer-vertical',
+              isResizing ? 'resizing' : ''
+            ]"
+            @mousedown="startResize"
+            @dblclick="resetSplitRatio"
+            :title="isResizing ? `${splitRatioPercent}%` : 'Double-click to reset'"
+          >
+            <!-- Ratio tooltip during drag -->
+            <div
+              v-if="isResizing"
+              class="absolute z-10 px-2 py-1 bg-accent text-white text-xs rounded-md pointer-events-none whitespace-nowrap"
+              :class="appState.layoutDirection === 'vertical' ? '-top-8 left-1/2 -translate-x-1/2' : '-left-16 top-1/2 -translate-y-1/2'"
+            >
+              {{ splitRatioPercent }}%
+            </div>
+          </div>
+
           <!-- Response Panel -->
-          <ResponsePanel class="flex-1 min-w-0 min-h-0" />
+          <ResponsePanel
+            class="min-w-0 min-h-0"
+            :style="{
+              flex: `1 1 ${100 - appState.splitRatio}%`
+            }"
+          />
         </div>
       </div>
     </div>
@@ -81,27 +105,45 @@ watch(effectiveTheme, (theme) => {
 
 // Resize handling
 const isResizing = ref(false)
+const splitRatioPercent = computed(() => Math.round(appState.splitRatio))
+let startX = 0
+let startY = 0
+let startRatio = 50
 
 function startResize(e: MouseEvent) {
   isResizing.value = true
+  startX = e.clientX
+  startY = e.clientY
+  startRatio = appState.splitRatio
   document.addEventListener('mousemove', onResize)
   document.addEventListener('mouseup', stopResize)
+  e.preventDefault()
+}
+
+function resetSplitRatio() {
+  appState.splitRatio = 50
 }
 
 function onResize(e: MouseEvent) {
   if (!isResizing.value) return
-  
+
   const container = document.querySelector('.flex-1.flex.overflow-hidden') as HTMLElement
   if (!container) return
-  
+
   const rect = container.getBoundingClientRect()
-  
+
   if (appState.layoutDirection === 'horizontal') {
-    const ratio = ((e.clientX - rect.left) / rect.width) * 100
-    appState.splitRatio = Math.max(20, Math.min(80, ratio))
+    // Calculate delta from start position
+    const deltaX = e.clientX - startX
+    const deltaRatio = (deltaX / rect.width) * 100
+    const newRatio = startRatio + deltaRatio
+    appState.splitRatio = Math.max(20, Math.min(80, newRatio))
   } else {
-    const ratio = ((e.clientY - rect.top) / rect.height) * 100
-    appState.splitRatio = Math.max(20, Math.min(80, ratio))
+    // Calculate delta from start position
+    const deltaY = e.clientY - startY
+    const deltaRatio = (deltaY / rect.height) * 100
+    const newRatio = startRatio + deltaRatio
+    appState.splitRatio = Math.max(20, Math.min(80, newRatio))
   }
 }
 
@@ -602,11 +644,24 @@ onUnmounted(() => {
 .resizer {
   flex-shrink: 0;
   background: transparent;
-  transition: background 0.2s;
+  transition: background 0.2s, box-shadow 0.2s;
+  position: relative;
 }
 
 .resizer:hover {
-  background: rgb(var(--color-accent));
+  background: #d97706;
+}
+
+.resizer.resizing {
+  background: #d97706;
+}
+
+.resizer.resizing.resizer-vertical {
+  box-shadow: 0 0 12px 2px rgba(217, 119, 6, 0.5);
+}
+
+.resizer.resizing.resizer-horizontal {
+  box-shadow: 0 0 12px 2px rgba(217, 119, 6, 0.5);
 }
 
 .resizer-vertical {

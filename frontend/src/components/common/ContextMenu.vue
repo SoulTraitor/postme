@@ -11,9 +11,17 @@
       <div
         v-if="isOpen"
         ref="menuRef"
-        class="fixed z-50 min-w-48 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none"
-        :class="effectiveTheme === 'dark' ? 'bg-dark-elevated' : 'bg-white'"
-        :style="{ top: `${position.y}px`, left: `${position.x}px` }"
+        class="fixed z-50 min-w-48 rounded-md py-1 ring-1 ring-black ring-opacity-5 focus:outline-none"
+        :class="[
+          effectiveTheme === 'dark' ? 'bg-dark-elevated shadow-2xl' : 'bg-white shadow-xl',
+        ]"
+        :style="{
+          top: `${position.y}px`,
+          left: `${position.x}px`,
+          boxShadow: effectiveTheme === 'dark'
+            ? '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3)'
+            : '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1)'
+        }"
         @click.stop
       >
         <button
