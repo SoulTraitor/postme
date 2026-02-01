@@ -5,8 +5,20 @@
   >
     <!-- Response state: Idle -->
     <div v-if="responseState.status === 'idle'" class="flex-1 flex flex-col items-center justify-center text-gray-500">
-      <PaperAirplaneIcon class="w-12 h-12 mb-4 opacity-50" />
-      <p>Click Send to make a request</p>
+      <div class="relative">
+        <div class="absolute inset-0 bg-accent/5 blur-2xl rounded-full"></div>
+        <PaperAirplaneIcon class="w-16 h-16 mb-6 opacity-40 relative" />
+      </div>
+      <p class="text-lg font-medium mb-2" :class="effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'">
+        Ready to send
+      </p>
+      <p class="text-sm mb-4">Click Send to make a request</p>
+      <div class="flex items-center gap-2 text-xs px-3 py-1.5 rounded-md" :class="effectiveTheme === 'dark' ? 'bg-dark-surface' : 'bg-gray-100'">
+        <kbd class="px-2 py-0.5 rounded font-mono" :class="effectiveTheme === 'dark' ? 'bg-dark-hover' : 'bg-white'">Ctrl</kbd>
+        <span>+</span>
+        <kbd class="px-2 py-0.5 rounded font-mono" :class="effectiveTheme === 'dark' ? 'bg-dark-hover' : 'bg-white'">Enter</kbd>
+        <span class="ml-1">to send</span>
+      </div>
     </div>
     
     <!-- Response state: Loading -->
@@ -41,12 +53,21 @@
         :class="effectiveTheme === 'dark' ? 'border-dark-border' : 'border-light-border'"
       >
         <!-- Status code -->
-        <span 
-          class="font-medium"
-          :class="statusColor"
-        >
-          {{ responseState.response.statusCode }} {{ responseState.response.status.split(' ').slice(1).join(' ') }}
-        </span>
+        <div class="flex items-center gap-2">
+          <span
+            class="px-3 py-1 rounded-full font-medium text-sm flex items-center gap-1.5"
+            :class="statusBadgeClass"
+          >
+            <component :is="statusIcon" v-if="statusIcon" class="w-4 h-4" />
+            {{ responseState.response.statusCode }}
+          </span>
+          <span
+            class="text-sm"
+            :class="effectiveTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'"
+          >
+            {{ responseState.response.status.split(' ').slice(1).join(' ') }}
+          </span>
+        </div>
         
         <!-- Duration -->
         <span class="status-value text-sm text-gray-500">
@@ -112,13 +133,15 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { 
-  PaperAirplaneIcon, 
-  NoSymbolIcon, 
-  ClockIcon, 
+import {
+  PaperAirplaneIcon,
+  NoSymbolIcon,
+  ClockIcon,
   ExclamationCircleIcon,
   ArrowsUpDownIcon,
-  ArrowsRightLeftIcon
+  ArrowsRightLeftIcon,
+  CheckCircleIcon,
+  XCircleIcon
 } from '@heroicons/vue/24/outline'
 import { useAppStateStore } from '@/stores/appState'
 import { useTabsStore } from '@/stores/tabs'
@@ -146,6 +169,29 @@ const statusColor = computed(() => {
   if (code >= 300 && code < 400) return 'text-status-redirect'
   if (code >= 400 && code < 500) return 'text-status-client-error'
   return 'text-status-server-error'
+})
+
+const statusBadgeClass = computed(() => {
+  if (responseState.value.status !== 'success') return ''
+  const code = responseState.value.response.statusCode
+  if (code >= 200 && code < 300) {
+    return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+  }
+  if (code >= 300 && code < 400) {
+    return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+  }
+  if (code >= 400 && code < 500) {
+    return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+  }
+  return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+})
+
+const statusIcon = computed(() => {
+  if (responseState.value.status !== 'success') return null
+  const code = responseState.value.response.statusCode
+  if (code >= 200 && code < 300) return CheckCircleIcon
+  if (code >= 400) return XCircleIcon
+  return null
 })
 
 const responseTabs = [

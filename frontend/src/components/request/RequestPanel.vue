@@ -22,10 +22,10 @@
         <!-- Save button -->
         <button
           @click="openSaveModal"
-          class="px-4 py-2 rounded-md font-medium transition-colors"
+          class="px-4 py-2 rounded-md font-medium shadow-sm hover:shadow-md transition-all duration-200"
           :class="[
-            effectiveTheme === 'dark' 
-              ? 'bg-dark-hover text-gray-300 hover:bg-dark-border' 
+            effectiveTheme === 'dark'
+              ? 'bg-dark-hover text-gray-300 hover:bg-dark-border'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           ]"
           :title="activeTab?.requestId ? 'Update request (Ctrl+S)' : 'Save request (Ctrl+S)'"
@@ -37,16 +37,25 @@
         <button
           v-if="!isLoading"
           @click="sendRequest"
-          class="px-6 py-2 rounded-md font-medium text-white bg-accent hover:bg-accent-hover transition-colors"
+          class="px-6 py-2 rounded-md font-medium text-white bg-accent hover:bg-accent-hover shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          style="transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s; will-change: transform; backface-visibility: hidden; -webkit-font-smoothing: subpixel-antialiased;"
+          :style="{ transform: activeTab?.url ? 'translateY(0)' : 'translateY(0)' }"
+          @mouseenter="(e) => !activeTab?.url ? null : (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'"
+          @mouseleave="(e) => (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'"
           :disabled="!activeTab?.url"
         >
+          <PaperAirplaneIcon class="w-4 h-4" />
           Send
         </button>
         <button
           v-else
           @click="cancelRequest"
-          class="px-6 py-2 rounded-md font-medium text-white bg-red-500 hover:bg-red-600 transition-colors"
+          class="px-6 py-2 rounded-md font-medium text-white bg-red-500 hover:bg-red-600 shadow-md hover:shadow-lg flex items-center gap-2"
+          style="transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s; will-change: transform; backface-visibility: hidden; -webkit-font-smoothing: subpixel-antialiased;"
+          @mouseenter="(e) => (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'"
+          @mouseleave="(e) => (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'"
         >
+          <XMarkIcon class="w-4 h-4" />
           Cancel
         </button>
       </div>
@@ -110,6 +119,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { PaperAirplaneIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import { useAppStateStore } from '@/stores/appState'
 import { useTabsStore } from '@/stores/tabs'
 import { useResponseStore } from '@/stores/response'
