@@ -176,35 +176,23 @@ async function closeActiveTabWithConfirmation() {
 
 // Load all data from backend
 async function loadData() {
+  const startTime = performance.now()
+  console.log('[Performance] loadData start')
+
   try {
-    // Load app state and sidebar state
-    const [state, sidebarStates] = await Promise.all([
+    // Priority 1: Load app state and tabs first (critical for UI)
+    const t1 = performance.now()
+    const [state, sidebarStates, sessions] = await Promise.all([
       api.getAppState(),
       api.getSidebarState(),
+      api.getTabSessions(),
     ])
+    console.log(`[Performance] Priority 1 loaded in ${(performance.now() - t1).toFixed(2)}ms - sessions count: ${sessions.length}`)
     appState.loadState(state, sidebarStates)
-    
-    // Apply system proxy setting to HTTP client
-    await api.setUseSystemProxy(state.useSystemProxy)
 
-    // Load collections, environments, history in parallel
-    const [tree, envs, globalVars, history] = await Promise.all([
-      api.getCollectionTree(),
-      api.getEnvironments(),
-      api.getGlobalVariables(),
-      api.getHistory(),
-    ])
-
-    collectionStore.setTree(tree)
-    environmentStore.setEnvironments(envs)
-    environmentStore.setGlobalVariables(globalVars)
-    environmentStore.setActiveEnv(state.activeEnvId)
-    historyStore.setHistory(history)
-
-    // Load tab sessions - show UI immediately, load original state in background
-    const sessions = await api.getTabSessions()
+    // Priority 2: Initialize tabs immediately for instant UI
+    const t2 = performance.now()
     if (sessions.length > 0) {
-      // Build tabs without original state first (fast UI display)
       const tabs = sessions.map(s => ({
         id: s.tabId,
         requestId: s.requestId,
@@ -217,18 +205,56 @@ async function loadData() {
         bodyType: s.bodyType,
         isDirty: s.isDirty,
         isPreview: false,
-        originalState: null, // Load in background
+        originalState: null,
       }))
-
-      // Initialize tabs immediately for fast UI
       tabsStore.init(tabs)
       const activeSession = sessions.find(s => s.isActive)
       if (activeSession) {
         tabsStore.setActiveTab(activeSession.tabId)
       }
+      console.log(`[Performance] Priority 2 tabs initialized in ${(performance.now() - t2).toFixed(2)}ms - ${tabs.length} tabs`)
+    } else {
+      tabsStore.init()
+      console.log('[Performance] No saved tabs, created empty tab')
+    }
 
-      // Load original states in background (for dirty detection)
-      Promise.all(sessions.map(async (s, index) => {
+    // Priority 3: Load other data in background (non-blocking, sequential to avoid DB locks)
+    const t3 = performance.now()
+    ;(async () => {
+      try {
+        // Apply proxy setting first (non-DB operation)
+        await api.setUseSystemProxy(state.useSystemProxy)
+
+        // Load critical UI data (collections for sidebar)
+        const tree = await api.getCollectionTree()
+        collectionStore.setTree(tree)
+        console.log(`[Performance] Collections loaded in ${(performance.now() - t3).toFixed(2)}ms`)
+
+        // Load environments (needed for requests)
+        const [envs, globalVars] = await Promise.all([
+          api.getEnvironments(),
+          api.getGlobalVariables(),
+        ])
+        environmentStore.setEnvironments(envs)
+        environmentStore.setGlobalVariables(globalVars)
+        environmentStore.setActiveEnv(state.activeEnvId)
+        console.log(`[Performance] Environments loaded in ${(performance.now() - t3).toFixed(2)}ms`)
+
+        // Load history last (least important)
+        const history = await api.getHistory()
+        historyStore.setHistory(history)
+        console.log(`[Performance] All background data loaded in ${(performance.now() - t3).toFixed(2)}ms`)
+      } catch (err) {
+        console.error('Failed to load background data:', err)
+      }
+    })()
+
+    console.log(`[Performance] loadData completed in ${(performance.now() - startTime).toFixed(2)}ms (tabs should be visible now)`)
+    console.log('[Performance] Background data loading...')
+
+    // Priority 4: Load original states in background (for dirty detection)
+    if (sessions.length > 0) {
+      Promise.all(sessions.map(async (s) => {
         if (s.requestId) {
           try {
             const originalRequest = await api.getRequest(s.requestId)
@@ -263,8 +289,6 @@ async function loadData() {
       })).catch(err => {
         console.error('Failed to load original states:', err)
       })
-    } else {
-      tabsStore.init()
     }
   } catch (error) {
     console.error('Failed to load data:', error)
@@ -282,8 +306,20 @@ function debouncedSave() {
   saveTimeout = window.setTimeout(async () => {
     try {
       await api.updateAppState(appState.getStateForSave())
-    } catch (error) {
-      console.error('Failed to save app state:', error)
+    } catch (error: any) {
+      // Retry once if database is locked
+      if (error?.message?.includes('locked') || error?.message?.includes('BUSY')) {
+        console.warn('Database locked, retrying in 500ms...')
+        setTimeout(async () => {
+          try {
+            await api.updateAppState(appState.getStateForSave())
+          } catch (retryError) {
+            console.error('Failed to save app state after retry:', retryError)
+          }
+        }, 500)
+      } else {
+        console.error('Failed to save app state:', error)
+      }
     }
   }, 1000)
 }
@@ -359,29 +395,40 @@ function debouncedSaveTabSessions() {
   }
   tabSaveTimeout = window.setTimeout(async () => {
     try {
-      // Clear existing sessions first
+      // Build all sessions first
+      const sessions = tabsStore.tabs.map((tab, i) => ({
+        tabId: tab.id,
+        requestId: tab.requestId ?? undefined,
+        title: tab.title,
+        sortOrder: i,
+        isActive: tab.id === tabsStore.activeTabId,
+        isDirty: tab.isDirty,
+        method: tab.method,
+        url: tab.url,
+        headers: tab.headers,
+        params: tab.params,
+        body: tab.body,
+        bodyType: tab.bodyType,
+      }))
+
+      // Clear and save atomically - if save fails, clear won't happen
       await api.clearTabSessions()
-      
-      // Save all current tabs
-      for (let i = 0; i < tabsStore.tabs.length; i++) {
-        const tab = tabsStore.tabs[i]
-        await api.saveTabSession({
-          tabId: tab.id,
-          requestId: tab.requestId ?? undefined,
-          title: tab.title,
-          sortOrder: i,
-          isActive: tab.id === tabsStore.activeTabId,
-          isDirty: tab.isDirty,
-          method: tab.method,
-          url: tab.url,
-          headers: tab.headers,
-          params: tab.params,
-          body: tab.body,
-          bodyType: tab.bodyType,
-        })
+
+      // Save all sessions - if any fails, log but continue
+      for (const session of sessions) {
+        try {
+          await api.saveTabSession(session)
+        } catch (err) {
+          console.error('Failed to save individual tab session:', err, session)
+          // Continue saving other tabs
+        }
       }
+
+      console.log(`[Tabs] Saved ${sessions.length} tab sessions`)
     } catch (error) {
       console.error('Failed to save tab sessions:', error)
+      // Critical: if clear fails, tabs might be lost on next restart
+      console.error('[CRITICAL] Tab sessions may be corrupted!')
     }
   }, 500)
 }
@@ -460,33 +507,67 @@ onMounted(() => {
   if (window.runtime && window.runtime.EventsOn) {
     // @ts-ignore
     window.runtime.EventsOn('wails:window-maximised', async () => {
-      // Verify actual state
-      try {
-        // @ts-ignore
-        const isMax = await window.runtime.WindowIsMaximised()
-        appState.windowMaximized = isMax
-      } catch {
-        appState.windowMaximized = true
-      }
-      immediateSave()
+      // Wait for animation to complete
+      setTimeout(async () => {
+        try {
+          // @ts-ignore
+          const isMax = await window.runtime.WindowIsMaximised()
+          console.log('[Window] Maximised event - actual state:', isMax)
+          appState.windowMaximized = isMax
+          immediateSave()
+        } catch (err) {
+          console.error('[Window] Error in maximised event:', err)
+          appState.windowMaximized = true
+          immediateSave()
+        }
+      }, 300)
     })
     // @ts-ignore
     window.runtime.EventsOn('wails:window-restored', async () => {
-      // Don't update maximized state here - let maximised/unmaximised events handle it
-      // Just update window position/size
-      updateWindowState(true)
+      // Wait longer for window to fully settle
+      setTimeout(async () => {
+        try {
+          // @ts-ignore
+          const isMax = await window.runtime.WindowIsMaximised()
+          console.log('[Window] Restored event - actual state:', isMax)
+          appState.windowMaximized = isMax
+          updateWindowState(true)
+        } catch (err) {
+          console.error('[Window] Error in restored event:', err)
+        }
+      }, 400)
     })
     // @ts-ignore
     window.runtime.EventsOn('wails:window-unmaximised', async () => {
-      // Verify actual state
+      // Wait for window to settle before saving position
+      setTimeout(async () => {
+        try {
+          // @ts-ignore
+          const isMax = await window.runtime.WindowIsMaximised()
+          console.log('[Window] Unmaximised event - actual state:', isMax)
+          appState.windowMaximized = isMax
+          updateWindowState(true)
+        } catch (err) {
+          console.error('[Window] Error in unmaximised event:', err)
+        }
+      }, 300)
+    })
+
+    // Backup: Check state when window gains focus (catches missed events)
+    window.addEventListener('focus', async () => {
       try {
         // @ts-ignore
-        const isMax = await window.runtime.WindowIsMaximised()
-        appState.windowMaximized = isMax
+        if (window.runtime && window.runtime.WindowIsMaximised) {
+          // @ts-ignore
+          const isMax = await window.runtime.WindowIsMaximised()
+          if (appState.windowMaximized !== isMax) {
+            console.warn('[Window] Focus check - state mismatch corrected:', { was: appState.windowMaximized, now: isMax })
+            appState.windowMaximized = isMax
+          }
+        }
       } catch {
-        appState.windowMaximized = false
+        // Ignore errors
       }
-      updateWindowState(true)
     })
   }
   

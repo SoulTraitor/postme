@@ -126,20 +126,22 @@ function minimizeWindow() {
 async function maximizeWindow() {
   // @ts-ignore - Wails runtime
   if (window.runtime) {
-    // Toggle immediately for responsive UI
-    appState.windowMaximized = !appState.windowMaximized
+    // No optimistic update - wait for events to update state
     await window.runtime.WindowToggleMaximise()
 
-    // Verify actual state after a short delay
+    // Backup: verify state if events don't fire
     setTimeout(async () => {
       try {
         // @ts-ignore
         const isMax = await window.runtime.WindowIsMaximised()
-        appState.windowMaximized = isMax
+        if (appState.windowMaximized !== isMax) {
+          console.warn('[Window] State mismatch detected, correcting:', { expected: !appState.windowMaximized, actual: isMax })
+          appState.windowMaximized = isMax
+        }
       } catch (err) {
-        // If check fails, keep the toggled value
+        console.error('[Window] Failed to verify state:', err)
       }
-    }, 150)
+    }, 400)
   }
 }
 
