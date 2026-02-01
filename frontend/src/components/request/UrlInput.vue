@@ -5,7 +5,7 @@
     @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     @keydown.enter="$emit('submit')"
     placeholder="Enter URL or paste text"
-    class="w-full px-3 py-2 rounded-md border outline-none text-sm"
+    class="url-input w-full px-3 py-2 rounded-md border outline-none text-sm"
     :class="[
       effectiveTheme === 'dark'
         ? 'bg-dark-surface border-dark-border text-white placeholder-gray-500 focus:border-accent'

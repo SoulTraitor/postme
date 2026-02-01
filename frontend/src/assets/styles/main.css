@@ -246,3 +246,42 @@ html:not(.dark) .cm-editor ::selection {
   background-color: #b4d7ff !important;
 }
 
+/* ========== JetBrains Mono 字体配置 ========== */
+
+/* CodeMirror 编辑器 */
+.cm-editor,
+.cm-editor .cm-content,
+.cm-editor .cm-gutters {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  font-variant-ligatures: none; /* 禁用连字，避免与语法高亮冲突 */
+}
+
+.cm-editor .cm-gutters {
+  font-size: 12px;
+}
+
+/* URL 输入框 */
+.url-input {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+
+/* 键值对编辑器 */
+.kv-input {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+/* 响应头值 */
+.response-header-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+/* 状态栏数值 */
+.status-value {
+  font-family: 'JetBrains Mono', monospace;
+}
+

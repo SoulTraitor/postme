@@ -20,8 +20,8 @@
           >
             {{ key }}
           </td>
-          <td 
-            class="py-2 break-all"
+          <td
+            class="response-header-value py-2 break-all"
             :class="effectiveTheme === 'dark' ? 'text-gray-400' : 'text-gray-600'"
           >
             {{ value }}

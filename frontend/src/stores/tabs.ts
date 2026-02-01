@@ -49,15 +49,11 @@ function computeDirty(tab: Tab): boolean {
   // Compare headers
   if (JSON.stringify(tab.headers) !== JSON.stringify(orig.headers)) return true
   
-  // Compare body (only if method supports it)
-  const currentSupportsBody = !methodsWithoutBody.includes(tab.method.toUpperCase())
-  const origSupportsBody = !methodsWithoutBody.includes(orig.method.toUpperCase())
-  
-  if (currentSupportsBody && origSupportsBody) {
-    if (tab.body !== orig.body) return true
-    if (tab.bodyType !== orig.bodyType) return true
-  }
-  
+  // Compare body and bodyType
+  // Always check regardless of method, since the UI allows editing body for all methods
+  if (tab.body !== orig.body) return true
+  if (tab.bodyType !== orig.bodyType) return true
+
   return false
 }
 

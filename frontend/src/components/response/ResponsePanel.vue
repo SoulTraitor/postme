@@ -49,12 +49,12 @@
         </span>
         
         <!-- Duration -->
-        <span class="text-sm text-gray-500">
+        <span class="status-value text-sm text-gray-500">
           {{ responseState.response.duration }}ms
         </span>
-        
+
         <!-- Size -->
-        <span class="text-sm text-gray-500">
+        <span class="status-value text-sm text-gray-500">
           {{ formatSize(responseState.response.size) }}
         </span>
         

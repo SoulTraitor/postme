@@ -19,7 +19,7 @@
         :value="item.key"
         @input="updateItem(index, { key: ($event.target as HTMLInputElement).value })"
         :placeholder="keyPlaceholder"
-        class="w-1/3 min-w-0 px-3 py-1.5 rounded-md border outline-none text-sm"
+        class="kv-input w-1/3 min-w-0 px-3 py-1.5 rounded-md border outline-none text-sm"
         :class="[
           effectiveTheme === 'dark'
             ? 'bg-dark-surface border-dark-border text-white placeholder-gray-500 focus:border-accent'
@@ -50,7 +50,7 @@
         :value="item.value"
         @input="updateItem(index, { value: ($event.target as HTMLInputElement).value })"
         :placeholder="valuePlaceholder"
-        class="flex-1 px-3 py-1.5 rounded-md border outline-none text-sm"
+        class="kv-input flex-1 px-3 py-1.5 rounded-md border outline-none text-sm"
         :class="[
           effectiveTheme === 'dark'
             ? 'bg-dark-surface border-dark-border text-white placeholder-gray-500 focus:border-accent'
@@ -102,7 +102,7 @@
         :placeholder="keyPlaceholder"
         @keydown.enter="addItem"
         @blur="onNewInputBlur"
-        class="w-1/3 min-w-0 px-3 py-1.5 rounded-md border outline-none text-sm"
+        class="kv-input w-1/3 min-w-0 px-3 py-1.5 rounded-md border outline-none text-sm"
         :class="[
           effectiveTheme === 'dark'
             ? 'bg-dark-surface border-dark-border text-white placeholder-gray-500 focus:border-accent'
@@ -130,7 +130,7 @@
         :placeholder="valuePlaceholder"
         @keydown.enter="addItem"
         @blur="onNewInputBlur"
-        class="flex-1 px-3 py-1.5 rounded-md border outline-none text-sm"
+        class="kv-input flex-1 px-3 py-1.5 rounded-md border outline-none text-sm"
         :class="[
           effectiveTheme === 'dark'
             ? 'bg-dark-surface border-dark-border text-white placeholder-gray-500 focus:border-accent'
