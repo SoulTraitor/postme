@@ -9,7 +9,7 @@ PostMe 是一款基于 Wails 构建的轻量级 REST 请求发送工具，类似
 | 层级 | 技术选型 | 版本 |
 |------|----------|------|
 | 框架 | Wails | v2 |
-| 后端 | Go | 1.25.6 |
+| 后端 | Go | 1.21+ |
 | 前端 | Vue 3 + TypeScript + Composition API | Vue 3.4+ |
 | UI 样式 | Tailwind CSS | 3.x |
 | UI 组件 | Headless UI | 1.x |
@@ -17,7 +17,7 @@ PostMe 是一款基于 Wails 构建的轻量级 REST 请求发送工具，类似
 | 状态管理 | Pinia | 2.x |
 | 代码编辑器 | CodeMirror | 6.x |
 | 数据库 | SQLite (modernc.org/sqlite) | - |
-| SQL 增强 | sqlx | 1.x |
+| 字体 | JetBrains Mono | - |
 
 ## 3. 项目目录结构
 
@@ -26,126 +26,26 @@ postme/
 ├── main.go                     # 应用入口
 ├── app.go                      # 主应用结构体
 ├── wails.json                  # Wails 配置
-├── go.mod
-├── go.sum
-│
-├── data/                       # 数据目录（与应用同级，便于迁移）
-│   └── postme.db               # SQLite 数据库
-│
+├── data/postme.db              # SQLite 数据库
 ├── internal/
 │   ├── models/                 # 数据模型
-│   │   ├── request.go          # 请求模型
-│   │   ├── response.go         # 响应模型
-│   │   ├── collection.go       # 集合模型
-│   │   ├── folder.go           # 文件夹模型
-│   │   ├── history.go          # 历史记录模型
-│   │   ├── environment.go      # 环境变量模型
-│   │   └── app_state.go        # 应用状态模型
-│   │
 │   ├── database/               # 数据库层
-│   │   ├── db.go               # 数据库连接管理
-│   │   ├── migrations.go       # 数据库迁移
 │   │   └── repository/         # 数据访问层
-│   │       ├── request_repo.go
-│   │       ├── collection_repo.go
-│   │       ├── folder_repo.go
-│   │       ├── history_repo.go
-│   │       ├── environment_repo.go
-│   │       └── app_state_repo.go
-│   │
 │   ├── services/               # 业务逻辑层
-│   │   ├── http_client.go      # HTTP 请求执行
-│   │   ├── request_service.go  # 请求管理服务
-│   │   ├── collection_service.go
-│   │   ├── environment_service.go
-│   │   └── history_service.go
-│   │
-│   └── handlers/               # Wails 绑定处理器（暴露给前端）
-│       ├── request_handler.go
-│       ├── collection_handler.go
-│       ├── environment_handler.go
-│       ├── history_handler.go
-│       └── app_state_handler.go
-│
-├── frontend/                   # 前端代码
+│   └── handlers/               # Wails 绑定处理器
+├── frontend/
 │   ├── src/
-│   │   ├── main.ts
-│   │   ├── App.vue
-│   │   │
 │   │   ├── components/         # UI 组件
-│   │   │   ├── request/        # 请求相关
-│   │   │   │   ├── RequestPanel.vue
-│   │   │   │   ├── MethodSelect.vue
-│   │   │   │   ├── UrlInput.vue
-│   │   │   │   ├── HeadersEditor.vue
-│   │   │   │   ├── ParamsEditor.vue
-│   │   │   │   └── BodyEditor.vue
-│   │   │   │
-│   │   │   ├── response/       # 响应相关
-│   │   │   │   ├── ResponsePanel.vue
-│   │   │   │   ├── ResponseHeaders.vue
-│   │   │   │   └── ResponseBody.vue
-│   │   │   │
-│   │   │   ├── sidebar/        # 侧边栏
-│   │   │   │   ├── Sidebar.vue
-│   │   │   │   ├── CollectionTree.vue
-│   │   │   │   └── HistoryList.vue
-│   │   │   │
-│   │   │   ├── tabs/           # 标签页
-│   │   │   │   ├── TabBar.vue
-│   │   │   │   └── TabItem.vue
-│   │   │   │
-│   │   │   ├── modals/         # 弹窗
-│   │   │   │   ├── ConfirmModal.vue
-│   │   │   │   ├── SaveRequestModal.vue
-│   │   │   │   ├── EnvironmentModal.vue
-│   │   │   │   └── InputModal.vue
-│   │   │   │
-│   │   │   └── common/         # 通用组件
-│   │   │       ├── KeyValueEditor.vue
-│   │   │       ├── TabGroup.vue
-│   │   │       ├── IconButton.vue
-│   │   │       └── Toast.vue
-│   │   │
 │   │   ├── stores/             # Pinia 状态管理
-│   │   │   ├── tabs.ts         # Tab 状态
-│   │   │   ├── request.ts      # 当前请求状态
-│   │   │   ├── response.ts     # 响应缓存（仅内存）
-│   │   │   ├── collection.ts   # 集合数据
-│   │   │   ├── environment.ts  # 环境变量
-│   │   │   ├── history.ts      # 历史记录
-│   │   │   └── appState.ts     # 应用状态
-│   │   │
 │   │   ├── composables/        # 组合式函数
-│   │   │   ├── useRequest.ts
-│   │   │   ├── useKeyValue.ts
-│   │   │   └── useModal.ts
-│   │   │
-│   │   ├── types/              # TypeScript 类型
-│   │   │   └── index.ts
-│   │   │
-│   │   └── assets/
-│   │       └── styles/
-│   │           └── main.css
-│   │
-│   ├── wailsjs/                # Wails 自动生成
-│   │   └── go/
-│   │       ├── handlers/
-│   │       └── models.ts
-│   │
-│   ├── index.html
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
-│   └── postcss.config.js
-│
+│   │   └── types/              # TypeScript 类型
+│   └── public/favicon.ico      # 应用图标
 └── build/                      # 构建输出
 ```
 
-## 4. 数据模型设计
+## 4. 数据模型
 
-### 4.1 数据库表结构
+### 4.1 核心表结构
 
 ```sql
 -- 集合（顶层容器）
@@ -161,19 +61,18 @@ CREATE TABLE collections (
 -- 文件夹（只能在集合下，不能嵌套）
 CREATE TABLE folders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    collection_id INTEGER NOT NULL,
+    collection_id INTEGER NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 请求
 CREATE TABLE requests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    collection_id INTEGER NOT NULL,
-    folder_id INTEGER,
+    collection_id INTEGER NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+    folder_id INTEGER REFERENCES folders(id) ON DELETE SET NULL,
     name TEXT NOT NULL,
     method TEXT NOT NULL DEFAULT 'GET',
     url TEXT NOT NULL DEFAULT '',
@@ -183,15 +82,13 @@ CREATE TABLE requests (
     body_type TEXT DEFAULT 'none',
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
-    FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE SET NULL
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 历史记录（最多保留 100 条，超出自动删除最早记录）
+-- 历史记录（最多 100 条）
 CREATE TABLE history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    request_id INTEGER,
+    request_id INTEGER REFERENCES requests(id) ON DELETE SET NULL,
     method TEXT NOT NULL,
     url TEXT NOT NULL,
     request_headers TEXT,
@@ -200,23 +97,15 @@ CREATE TABLE history (
     response_headers TEXT,
     response_body TEXT,
     duration_ms INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE SET NULL
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 环境
+-- 环境变量
 CREATE TABLE environments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     variables TEXT DEFAULT '[]',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- 全局变量
-CREATE TABLE global_variables (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    variables TEXT DEFAULT '[]',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -236,23 +125,15 @@ CREATE TABLE app_state (
     active_env_id INTEGER,
     request_timeout REAL DEFAULT 30,
     auto_locate_sidebar INTEGER DEFAULT 1,
+    use_system_proxy INTEGER DEFAULT 1,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 侧边栏展开状态
-CREATE TABLE sidebar_state (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    item_type TEXT NOT NULL,
-    item_id INTEGER NOT NULL,
-    expanded INTEGER DEFAULT 0,
-    UNIQUE(item_type, item_id)
-);
-
--- Tab 会话
+-- Tab 会话持久化
 CREATE TABLE tab_sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     tab_id TEXT UNIQUE NOT NULL,
-    request_id INTEGER,
+    request_id INTEGER REFERENCES requests(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     sort_order INTEGER NOT NULL,
     is_active INTEGER DEFAULT 0,
@@ -264,128 +145,23 @@ CREATE TABLE tab_sessions (
     body TEXT DEFAULT '',
     body_type TEXT DEFAULT 'none',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (request_id) REFERENCES requests(id) ON DELETE SET NULL
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-### 4.2 Go 数据模型
+### 4.2 层级结构
 
-```go
-// 请求
-type Request struct {
-    ID           int64      `json:"id" db:"id"`
-    CollectionID int64      `json:"collectionId" db:"collection_id"`
-    FolderID     *int64     `json:"folderId" db:"folder_id"`
-    Name         string     `json:"name" db:"name"`
-    Method       string     `json:"method" db:"method"`
-    URL          string     `json:"url" db:"url"`
-    Headers      []KeyValue `json:"headers"`
-    Params       []KeyValue `json:"params"`
-    Body         string     `json:"body" db:"body"`
-    BodyType     string     `json:"bodyType" db:"body_type"`
-    SortOrder    int        `json:"sortOrder" db:"sort_order"`
-    CreatedAt    time.Time  `json:"createdAt" db:"created_at"`
-    UpdatedAt    time.Time  `json:"updatedAt" db:"updated_at"`
-}
-
-type KeyValue struct {
-    Key     string `json:"key"`
-    Value   string `json:"value"`
-    Enabled bool   `json:"enabled"`
-}
-
-// 响应
-type Response struct {
-    StatusCode int               `json:"statusCode"`
-    Status     string            `json:"status"`
-    Headers    map[string]string `json:"headers"`
-    Body       string            `json:"body"`
-    Size       int64             `json:"size"`
-    Duration   int64             `json:"duration"`
-}
-
-// 集合
-type Collection struct {
-    ID          int64     `json:"id" db:"id"`
-    Name        string    `json:"name" db:"name"`
-    Description string    `json:"description" db:"description"`
-    SortOrder   int       `json:"sortOrder" db:"sort_order"`
-    CreatedAt   time.Time `json:"createdAt" db:"created_at"`
-    UpdatedAt   time.Time `json:"updatedAt" db:"updated_at"`
-}
-
-// 文件夹
-type Folder struct {
-    ID           int64     `json:"id" db:"id"`
-    CollectionID int64     `json:"collectionId" db:"collection_id"`
-    Name         string    `json:"name" db:"name"`
-    SortOrder    int       `json:"sortOrder" db:"sort_order"`
-    CreatedAt    time.Time `json:"createdAt" db:"created_at"`
-    UpdatedAt    time.Time `json:"updatedAt" db:"updated_at"`
-}
-
-// 环境
-type Environment struct {
-    ID        int64      `json:"id" db:"id"`
-    Name      string     `json:"name" db:"name"`
-    Variables []Variable `json:"variables"`
-    CreatedAt time.Time  `json:"createdAt" db:"created_at"`
-    UpdatedAt time.Time  `json:"updatedAt" db:"updated_at"`
-}
-
-type Variable struct {
-    Key    string `json:"key"`
-    Value  string `json:"value"`
-    Secret bool   `json:"secret"`
-}
-```
-
-### 4.3 层级结构规则
-
-- 集合（Collection）：顶层容器
-- 文件夹（Folder）：只能在集合下，不能嵌套
-- 请求（Request）：可以直接在集合下，也可以在文件夹下
+- **集合（Collection）**：顶层容器
+- **文件夹（Folder）**：只能在集合下，不能嵌套
+- **请求（Request）**：可以直接在集合下，也可以在文件夹下
 
 最大层级：集合 → 文件夹 → 请求（3层）
 
-## 5. UI 布局设计
+## 5. UI 布局
 
-### 5.0 窗口框架
+### 5.1 窗口结构
 
-应用使用无边框窗口（Frameless）配合自定义标题栏：
-
-```go
-// main.go - Wails 窗口配置
-Frameless: true,
-Windows: &windows.Options{
-    WebviewIsTransparent: false,
-    WindowIsTranslucent:  false,
-},
-```
-
-自定义标题栏组件 `TitleBar.vue`：
-- 可拖动区域用于移动窗口（通过 `--wails-draggable: drag`）
-- 窗口控制按钮（最小化、最大化/还原、关闭）
-- 集成菜单按钮、环境选择器、主题切换、设置按钮
-
-### 5.0.1 窗口控制按钮
-
-自定义标题栏包含三个窗口控制按钮：
-
-| 按钮 | 图标 | 功能 |
-|------|------|------|
-| 最小化 | `—` | 最小化窗口 |
-| 最大化/还原 | `□` / `⧉` | 最大化时显示叠加方块图标，恢复后显示单方块 |
-| 关闭 | `✕` | 关闭应用 |
-
-最大化按钮通过监听 Wails 窗口事件动态切换图标：
-- `wails:window-maximised` → 显示还原图标
-- `wails:window-restored` / `wails:window-unmaximised` → 显示最大化图标
-
-### 5.1 整体布局
-
-采用多标签页 + 可切换分栏布局：
+无边框窗口 + 自定义标题栏：
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -397,2166 +173,267 @@ Windows: &windows.Options{
 ├────────────────────────────────┬─────────────────────────────────────┤
 │        请求编辑区              │            响应展示区               │
 │                                │                                     │
-│  默认左右分栏                  │  可切换为上下分栏                   │
+│  默认左右分栏，可切换上下分栏  │  可拖动分隔线调整比例               │
 └────────────────────────────────┴─────────────────────────────────────┘
-
-标题栏按钮说明：
-- ☰ : 展开/收起侧边栏
-- [ env ▼ ] : 环境切换下拉
-- [☀] 或 [🌙] : 主题切换（仅在亮暗之间切换，跟随系统只能在设置中选择）
-- [⚙] : 设置
-
-### 5.2.1 主题切换按钮行为
-
-按钮图标反映当前实际显示的主题：
-- 亮色主题下显示 ☀
-- 暗色主题下显示 🌙
-- 跟随系统时，图标随系统主题自动变化
-
-点击在亮暗之间切换：亮色 ↔ 暗色
-
-**注意**：跟随系统选项只能在设置弹窗中选择，标题栏按钮不会切换到跟随系统模式。
-
-Tooltip 提示：
-- 亮色时："切换到暗色模式"
-- 暗色时："切换到亮色模式"
 ```
 
-### 5.2 布局控制
+### 5.2 标题栏
 
-| 操作 | 说明 |
+| 元素 | 功能 |
 |------|------|
-| 左上角 `☰` | 展开/收起左侧集合面板 |
-| 响应区 `⇅` 按钮 | 切换左右/上下分栏 |
-| 拖拽分隔条 | 调整分栏比例 |
-| `Ctrl+B` | 切换侧边栏 |
-| `Ctrl+\` | 切换分栏方向 |
+| ☰ | 展开/收起侧边栏 |
+| [ env ▼ ] | 环境切换下拉 |
+| ☀/🌙 | 主题切换（亮色 ↔ 暗色） |
+| ⚙ | 设置 |
+| □/⧉ | 最大化/还原（图标随状态切换） |
 
-### 5.3 侧边栏（从左侧滑出）
+### 5.3 侧边栏
 
-采用 Tab 切换模式，默认显示 Collections：
+Tab 切换模式：Collections / History
 
-```
-┌─────────────────────────────────────┐
-│ ┌────────────┬────────────┐      ‹  │
-│ │Collections │  History   │         │
-│ └────────────┴────────────┘         │
-├─────────────────────────────────────┤
-│  🔍 Search...                + 📁   │
-├─────────────────────────────────────┤
-│                                     │
-│  ▼ 📁 Users API                     │
-│      ▼ 📂 Authentication            │
-│          POST /login                │
-│          POST /logout               │
-│      ▶ 📂 Management                │
-│  ▶ 📁 Orders API                    │
-│  ▶ 📁 Uncategorized                 │
-│                                     │
-└─────────────────────────────────────┘
+- **Collections**：树形结构展示集合、文件夹、请求
+- **History**：按时间分组显示历史记录（最多 100 条）
 
-切换到 History Tab：
-
-┌─────────────────────────────────────┐
-│ ┌────────────┬────────────┐      ‹  │
-│ │ Collections│  History   │         │
-│ └────────────┴────────────┘         │
-├─────────────────────────────────────┤
-│  🔍 Search...                   🗑  │
-├─────────────────────────────────────┤
-│                                     │
-│  Today                              │
-│    10:30  GET   /users         200  │
-│    10:28  POST  /login         200  │
-│    10:25  GET   /orders        404  │
-│                                     │
-│  Yesterday                          │
-│    18:20  PUT   /users/123     200  │
-│                                     │
-└─────────────────────────────────────┘
-```
-
-### 5.4 History 记录限制
-
-| 规则 | 值 |
-|------|-----|
-| 最大记录数 | 100 条 |
-| 超出处理 | 自动删除最早的记录 |
-| 清空按钮 | `🗑` 一键清空（需二次确认） |
-
-### 5.4.1 History 记录时机
-
-每次成功执行请求后自动保存历史记录，记录内容包括：
-
-| 字段 | 说明 |
-|------|------|
-| requestId | 关联的请求ID（可选，临时请求无此字段） |
-| method | HTTP 方法 |
-| url | 完整请求 URL（包含替换后的变量） |
-| requestHeaders | 请求头 JSON |
-| requestBody | 请求体内容 |
-| statusCode | 响应状态码 |
-| responseHeaders | 响应头 JSON |
-| responseBody | 响应体内容 |
-| durationMs | 请求耗时（毫秒） |
-| createdAt | 记录时间 |
-
-### 5.5 Tab 与侧边栏联动
-
-- 切换 Tab 时，侧边栏自动展开对应文件夹并高亮请求
-- 双击侧边栏请求，打开/切换到对应 Tab
-- 单击侧边栏请求，预览模式（斜体 Tab，切换时不保留）
-
-#### 5.5.1 Tab-Sidebar 同步实现
-
-当 `activeTab` 变化时，自动定位并高亮侧边栏中对应的请求：
-
-```typescript
-// App.vue - 监听 activeTab 变化
-watch(() => tabsStore.activeTab, async (tab) => {
-  if (!tab?.requestId || !appState.autoLocateSidebar) return
-  
-  // 1. 查找请求所在路径
-  const path = collectionStore.findRequestPath(tab.requestId)
-  if (!path) return
-  
-  // 2. 展开父级集合和文件夹
-  appState.setSidebarItemExpanded('collection', path.collectionId, true)
-  if (path.folderId) {
-    appState.setSidebarItemExpanded('folder', path.folderId, true)
-  }
-  
-  // 3. 高亮请求项
-  appState.highlightedRequestId = path.requestId
-})
-```
-
-RequestItem.vue 根据 `highlightedRequestId` 显示高亮样式。
-
-### 5.6 Tab 状态标识
+### 5.4 Tab 状态
 
 | 状态 | 显示样式 |
 |------|----------|
 | 新建未保存 | 斜体 `Untitled` |
-| 已保存无修改 | 正常 `GET /users` |
-| 已保存有修改 | ● 圆点 + 正常 `● GET /users` |
+| 已保存无修改 | 正常显示 |
+| 已保存有修改 | ● 圆点（脉冲动画） |
+| 预览模式 | 斜体 + 半透明 |
+| 活动 Tab | 底部橙色指示条 + 阴影提升 |
 
-#### 5.6.1 Dirty 状态检测
+### 5.5 分隔线交互
 
-Tab 的脏状态通过比较当前内容与 `originalState` 计算：
+- 拖动调整分栏比例（20%-80%）
+- 拖动时显示橙色发光效果和比例提示
+- 双击重置为 50%
 
-```typescript
-// tabs.ts - 计算 dirty 状态
-function computeDirty(tab: Tab): boolean {
-  if (!tab.originalState) return true
-  const orig = tab.originalState
-  return (
-    tab.method !== orig.method ||
-    tab.url !== orig.url ||
-    tab.body !== orig.body ||
-    tab.bodyType !== orig.bodyType ||
-    JSON.stringify(tab.headers) !== JSON.stringify(orig.headers) ||
-    JSON.stringify(tab.params) !== JSON.stringify(orig.params)
-  )
-}
+## 6. 视觉设计
+
+### 6.1 配色方案
+
+**暗色主题**：
+```
+背景: #1a1a1a → #262626 → #333333
+文字: #f5f5f5 / #a3a3a3 / #737373
+强调: #d97706 (橙色)
+边框: #404040
 ```
 
-- `originalState` 在打开请求或保存后更新
-- 切换 HTTP 方法（如 POST → GET）正确触发脏状态
-
-### 5.7 Tab 拖放重排序
-
-支持通过拖放重新排列标签页顺序：
-
-```typescript
-// TabBar.vue - 拖放实现
-function onDragStart(e: DragEvent, index: number) {
-  dragIndex.value = index
-  e.dataTransfer!.effectAllowed = 'move'
-}
-
-function onDragOver(e: DragEvent, index: number) {
-  e.preventDefault()
-  dropIndex.value = index
-}
-
-function onDrop(e: DragEvent, index: number) {
-  e.preventDefault()
-  if (dragIndex.value !== null && dragIndex.value !== index) {
-    tabsStore.reorderTabs(dragIndex.value, index)
-  }
-  resetDragState()
-}
+**亮色主题**：
+```
+背景: #ffffff → #fafafa → #f5f5f5
+文字: #171717 / #525252 / #a3a3a3
+强调: #d97706 (橙色)
+边框: #e5e5e5
 ```
 
-- 拖动时显示插入指示线
-- 放置后更新 `sortOrder` 并持久化到数据库
+### 6.2 HTTP 方法颜色
 
-## 6. 配色方案
-
-### 6.1 暗色主题 (Dark Mode)
-
-```
-背景层级:
-  bg-base        #1a1a1a   最底层背景
-  bg-surface     #262626   卡片/面板背景
-  bg-elevated    #333333   悬浮/弹窗背景
-  bg-hover       #3d3d3d   悬停状态
-
-文字颜色:
-  text-primary   #f5f5f5   主要文字
-  text-secondary #a3a3a3   次要文字
-  text-muted     #737373   占位符/禁用
-
-强调色:
-  accent         #d97706   主强调色（按钮、链接）
-  accent-hover   #b45309   强调色悬停
-  accent-subtle  #78350f   强调色背景（淡）
-
-边框:
-  border         #404040   默认边框
-  border-focus   #d97706   聚焦边框
-```
-
-### 6.2 亮色主题 (Light Mode)
-
-```
-背景层级:
-  bg-base        #ffffff   最底层背景
-  bg-surface     #fafafa   卡片/面板背景
-  bg-elevated    #f5f5f5   悬浮/弹窗背景
-  bg-hover       #e5e5e5   悬停状态
-
-文字颜色:
-  text-primary   #171717   主要文字
-  text-secondary #525252   次要文字
-  text-muted     #a3a3a3   占位符/禁用
-
-强调色:
-  accent         #d97706   主强调色
-  accent-hover   #b45309   强调色悬停
-  accent-subtle  #fef3c7   强调色背景（淡）
-
-边框:
-  border         #e5e5e5   默认边框
-  border-focus   #d97706   聚焦边框
-```
-
-### 6.3 HTTP 方法颜色
-
-```
-GET      #22c55e   绿色
-POST     #3b82f6   蓝色
-PUT      #f59e0b   橙黄色
-PATCH    #8b5cf6   紫色
-DELETE   #ef4444   红色
-OPTIONS  #6b7280   灰色
-HEAD     #6b7280   灰色
-```
-
-### 6.4 状态码颜色
-
-```
-2xx 成功       #22c55e   绿色
-3xx 重定向     #3b82f6   蓝色
-4xx 客户端错误 #f59e0b   橙色
-5xx 服务端错误 #ef4444   红色
-```
-
-### 6.5 圆角规范
-
-```
-radius-sm    4px    小按钮、标签
-radius-md    8px    按钮、输入框、卡片
-radius-lg    12px   面板、弹窗、Tab
-```
-
-## 7. 弹窗设计
-
-### 7.1 规则
-
-- 所有弹窗使用自定义组件，禁止使用系统原生弹窗（alert/confirm/prompt）
-- 所有删除操作必须二次确认
-- 弹窗跟随主题切换颜色
-
-### 7.2 弹窗类型
-
-| 类型 | 用途 |
+| 方法 | 颜色 |
 |------|------|
-| confirm | 普通确认操作 |
-| danger | 危险操作（删除） |
-| input | 输入内容（重命名） |
-| select | 选择项目（移动到） |
-| info | 信息提示 |
+| GET | #22c55e 绿色 |
+| POST | #3b82f6 蓝色 |
+| PUT | #f59e0b 橙黄色 |
+| PATCH | #8b5cf6 紫色 |
+| DELETE | #ef4444 红色 |
+| OPTIONS/HEAD | #6b7280 灰色 |
 
-### 7.3 按钮颜色规则
+### 6.3 状态码徽章
 
-| 场景 | 确认按钮 | 取消按钮 |
-|------|----------|----------|
-| 普通确认 | `#d97706` 强调色 | `#404040` 中性 |
-| 危险操作 | `#ef4444` 红色 | `#404040` 中性 |
+圆角徽章样式，带图标：
 
-### 7.4 交互规范
+| 范围 | 颜色 | 图标 |
+|------|------|------|
+| 2xx | 绿色 | CheckCircleIcon |
+| 3xx | 蓝色 | - |
+| 4xx | 黄色 | XCircleIcon |
+| 5xx | 红色 | XCircleIcon |
 
-| 交互 | 行为 |
+### 6.4 字体
+
+**JetBrains Mono**（等宽字体）应用于：
+- CodeMirror 编辑器（13px，禁用连字）
+- URL 输入框
+- 键值对编辑器
+- 响应头值
+- 状态栏数值
+
+### 6.5 动效规范
+
+| 元素 | 动效 |
 |------|------|
-| 点击遮罩 | 关闭弹窗（危险操作除外） |
-| ESC 键 | 关闭弹窗 |
-| Enter 键 | 触发确认（输入框除外） |
-| 打开时 | 焦点移到取消按钮（防止误操作） |
+| Send 按钮 | 悬停上移 2px + 阴影增强 |
+| Toast 通知 | 右侧滑入 + 缩放（300ms） |
+| 模态框 | 缩放 90%→100% + 背景模糊（300ms） |
+| Tab 切换 | 平滑过渡（200ms） |
+| 成功图标 | 单次弹跳动画 |
 
-### 7.4.1 环境管理弹窗
+## 7. 组件设计
 
-通过点击环境选择器右侧的齿轮按钮打开，支持完整的环境 CRUD 操作：
+### 7.1 弹窗类型
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  管理环境                                                    ✕   │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌───────────────────┐  ┌─────────────────────────────────────┐ │
-│  │ 环境列表          │  │ 变量编辑                            │ │
-│  │ ─────────────────│  │ ───────────────────────────────────│ │
-│  │ ▸ Development    │  │  Key            Value         [🗑] │ │
-│  │   Production     │  │  ┌──────────┐  ┌────────────┐       │ │
-│  │   Staging        │  │  │ BASE_URL │  │ http://... │       │ │
-│  │                  │  │  └──────────┘  └────────────┘       │ │
-│  │                  │  │  ┌──────────┐  ┌────────────┐       │ │
-│  │  [+ 新建环境]     │  │  │ API_KEY  │  │ ********   │  [👁] │ │
-│  └───────────────────┘  │  └──────────┘  └────────────┘       │ │
-│                         │                                     │ │
-│                         │  [+ 添加变量]                        │ │
-│                         └─────────────────────────────────────┘ │
-├─────────────────────────────────────────────────────────────────┤
-│                                              [ 取消 ]  [ 保存 ] │
-└─────────────────────────────────────────────────────────────────┘
-```
+| 类型 | 确认按钮颜色 | 用途 |
+|------|-------------|------|
+| confirm | 橙色 #d97706 | 普通确认 |
+| danger | 红色 #ef4444 | 删除操作 |
+| input | 橙色 | 输入内容（重命名） |
+| select | 橙色 | 选择项目（移动到） |
 
-功能：
-- 左侧环境列表支持选择、重命名、删除
-- 右侧编辑选中环境的变量
-- 变量支持 Secret 模式（密码遮挡，点击眼睛图标显示）
-- 新建环境自动选中并进入编辑
-- 重复变量名检测（红色边框高亮，保存时 Toast 提示）
-- 支持全局变量（所有环境共享）
+**交互规范**：
+- ESC 键关闭弹窗
+- 点击遮罩关闭（危险操作除外）
+- 嵌套弹窗时，ESC 只关闭最上层
 
-### 7.4.2 删除确认
+### 7.2 Toast 通知
 
-所有删除操作都需要二次确认：
+右上角显示，3 秒后自动消失：
 
-| 对象 | 确认消息 |
-|------|----------|
-| 集合 | 删除集合将同时删除所有文件夹和请求 |
-| 文件夹 | 删除文件夹将同时删除其中的所有请求 |
-| 请求 | 确认删除请求 |
-| 环境 | 删除环境将丢失所有变量 |
-| 环境变量 | 仅当变量名非空时确认删除 |
+| 类型 | 颜色 | 触发场景 |
+|------|------|---------|
+| success | 绿色 | 保存成功、删除成功、复制成功 |
+| error | 红色 | 请求失败、保存失败 |
+| warning | 橙色 | 变量名重复 |
+| info | 蓝色 | 信息提示 |
 
-### 7.5 Toast 通知
+### 7.3 右键菜单
 
-非阻断式提示，右上角显示，3秒后自动消失：
+**集合/文件夹**：新建请求、新建文件夹、重命名、复制、移动到、删除
 
-```
-✓ 操作成功   #22c55e
-✕ 操作失败   #ef4444
-⚠ 警告提示   #f59e0b
-ℹ 信息提示   #3b82f6
-```
+**请求**：在新标签页打开、复制、重命名、删除
+
+### 7.4 键值对编辑器
+
+- 行悬停高亮
+- 禁用项半透明
+- 删除按钮点击缩放反馈
+- 新增行淡入动画
+
+### 7.5 空状态设计
+
+响应面板空状态：
+- 渐变光晕背景
+- 大图标（16x16）
+- 标题 + 描述 + 快捷键提示
 
 ## 8. 编辑器功能
 
-### 8.1 使用 CodeMirror 6
+### 8.1 CodeMirror 配置
 
-支持功能：
 - 语法高亮（JSON、XML、HTML）
-- JSON 格式化（美化/压缩）
-- 撤销/重做（Ctrl+Z / Ctrl+Shift+Z）
-- 查找/替换（Ctrl+F / Ctrl+H）
+- JSON 格式化
+- 撤销/重做
+- 查找/替换
 - 自动补全（括号、引号配对）
 - 代码折叠
 - 行号显示
 
-### 8.1.1 CodeMirror 快捷键处理
+### 8.2 环境变量
 
-CodeMirror 编辑器配置了自定义快捷键映射，避免与全局快捷键冲突：
+语法：`{{变量名}}`
 
-```typescript
-keymap.of([
-  {
-    key: 'Ctrl-Enter',  // 发送请求，阻止换行
-    run: () => { emitKeyboardAction('send'); return true }
-  },
-  {
-    key: 'Ctrl-h',      // 打开搜索替换面板
-    run: (view) => { openSearchPanel(view); return true }
-  },
-  {
-    key: 'Ctrl-Shift-f', // 打开搜索面板
-    run: (view) => { openSearchPanel(view); return true }
-  },
-])
-```
-
-搜索扩展通过 `search({ top: true })` 配置在顶部显示搜索面板。
-
-### 8.1.2 亮色模式语法高亮
-
-亮色模式下 CodeMirror 使用高饱和度颜色，以适配 WebView2 渲染特性：
-
-| 元素 | 颜色 | Hex |
-|------|------|-----|
-| 属性名 | 绿色 | #22c55e |
-| 字符串 | 橙色 | #f97316 |
-| 数字 | 蓝色 | #0d6efd |
-| 布尔/null | 黄色 | #eab308 |
-
-**注意**：WebView2 子像素渲染在模态框遮罩下会对彩色文本产生轻微光晕，绿色最不明显，橙色/黄色略有蓝色光晕但可接受。
-
-### 8.2 环境变量支持
-
-- 使用 `{{变量名}}` 语法
-- 编辑器中变量高亮显示
-- 变量存在且有值 → 蓝色
-- 变量未定义 → 红色 + 波浪下划线警告
-- 鼠标悬停显示当前值
-
-### 8.3 变量类型
-
-| 类型 | 作用域 | 说明 |
-|------|--------|------|
-| 环境变量 | 当前环境 | 切换环境时值改变 |
-| 全局变量 | 所有环境 | 跨环境共享 |
-| 临时变量 | 当前会话 | 从响应中提取，关闭后丢失 |
+| 状态 | 显示 |
+|------|------|
+| 变量存在 | 蓝色高亮 |
+| 变量未定义 | 红色 + 波浪下划线 |
 
 ## 9. 快捷键
 
-| 快捷键 | 作用域 | 功能 |
-|--------|--------|------|
-| `Ctrl+S` | 全局 | 保存当前请求 |
-| `Ctrl+Enter` | 全局 | 发送请求 |
-| `Ctrl+Z` | 编辑器 | 撤销 |
-| `Ctrl+Shift+Z` | 编辑器 | 重做 |
-| `Ctrl+F` | 编辑器 | 查找 |
-| `Ctrl+H` | 编辑器 | 替换（仅请求体） |
-| `Ctrl+Shift+F` | 编辑器 | 格式化 JSON |
-| `Ctrl+B` | 全局 | 切换侧边栏 |
-| `Ctrl+\` | 全局 | 切换分栏方向 |
-| `Ctrl+T` | 全局 | 新建标签页 |
-| `Ctrl+W` | 全局 | 关闭当前标签页 |
-
-### 9.1 快捷键实现架构
-
-全局快捷键通过事件总线模式实现，避免组件间的紧耦合：
-
-```typescript
-// useKeyboardActions.ts - 事件发射器
-const listeners = new Map<string, Function[]>()
-
-export function onKeyboardAction(action: string, callback: Function) {
-  if (!listeners.has(action)) listeners.set(action, [])
-  listeners.get(action)!.push(callback)
-  return () => { /* cleanup */ }
-}
-
-export function emitKeyboardAction(action: string) {
-  listeners.get(action)?.forEach(cb => cb())
-}
-```
-
-- App.vue 监听全局键盘事件并调用 `emitKeyboardAction`
-- RequestPanel.vue 通过 `onKeyboardAction` 订阅并执行保存/发送
-
-## 10. 状态保存
-
-### 10.1 存储位置
-
-| 状态 | 存储位置 | 生命周期 |
-|------|----------|----------|
-| 窗口大小/位置 | SQLite | 永久 |
-| 布局设置 | SQLite | 永久 |
-| 侧边栏展开状态 | SQLite | 永久 |
-| Tab 列表和请求内容 | SQLite | 永久 |
-| 响应缓存 | 内存 (Pinia) | 应用运行期间 |
-
-### 10.1.1 窗口位置验证
-
-恢复窗口位置时进行有效性检查，避免窗口显示在不可见区域：
-
-| 验证项 | 有效范围 | 无效时处理 |
-|--------|----------|------------|
-| 坐标 X/Y | -100 ~ 10000 | 使用系统默认位置 |
-| 窗口尺寸 | ≥ 800×600 | 不保存（保留上次有效值） |
-| 最小化状态 | - | 不保存位置和尺寸 |
-
-### 10.2 响应缓存规则
-
-- 仅在应用运行期间保留
-- 关闭 Tab 时清除对应响应
-- 关闭应用时清空所有响应
-- 重新打开应用后响应区显示空状态
-
-### 10.3 状态保存时机
-
-| 事件 | 保存内容 |
-|------|----------|
-| 窗口大小改变 | 窗口尺寸（防抖 500ms） |
-| 展开/收起集合 | 侧边栏状态 |
-| 切换 Tab | 当前激活 Tab |
-| 编辑请求 | Tab 内容（防抖 1s） |
-| 新建/关闭 Tab | Tab 列表 |
-| 关闭软件 | 全量保存 |
-
-### 10.4 启动恢复流程
-
-1. 读取 app_state，恢复窗口大小/位置
-2. 读取 sidebar_state，恢复展开/收起状态
-3. 读取 tab_sessions，恢复所有 Tab（包括未保存的修改）
-4. 激活上次的 Tab
-5. 响应区显示空状态（需重新发送请求）
-
-## 11. 新建请求保存交互
-
-### 11.1 状态流转
-
-1. 点击 `+` 新建空白请求
-2. Tab 显示斜体 `Untitled`，● 表示未保存
-3. 用户编辑请求内容
-4. `Ctrl+S` 或点击保存图标
-5. 弹出保存弹窗，选择名称和位置
-
-### 11.2 保存弹窗
-
-- 请求名称输入框（默认根据 URL 生成，如 `GET /users`）
-- 保存位置选择（集合/文件夹树形选择）
-- 支持新建集合
-
-### 11.3 关闭未保存 Tab
-
-弹窗询问：是否保存对 "xxx" 的更改？
-- 不保存：直接关闭
-- 取消：取消关闭操作
-- 保存：保存后关闭
-
-## 12. 右键菜单
-
-### 12.1 集合/文件夹右键菜单
-
-- 新建请求
-- 新建文件夹（仅集合）
-- 重命名
-- 复制
-- 移动到...
-- 导出
-- 删除
-
-### 12.2 请求右键菜单
-
-- 打开
-- 在新标签页打开
-- 重命名
-- 复制
-- 移动到...
-- 复制为 cURL
-- 删除
-
-## 12.3 拖放功能
-
-支持通过拖放重新组织集合、文件夹和请求：
-
-### 12.3.1 可拖放的元素
-
-| 元素类型 | 可拖放 | 可作为放置目标 |
-|----------|--------|----------------|
-| 集合 | ✓ | ✓（重排序） |
-| 文件夹 | ✓ | ✓（重排序、接收请求） |
-| 请求 | ✓ | ✓（重排序） |
-
-### 12.3.2 拖放规则
-
-| 操作 | 行为 |
-|------|------|
-| 拖动集合到集合 | 重新排序集合顺序 |
-| 拖动文件夹到文件夹 | 在同一集合内重新排序文件夹 |
-| 拖动请求到集合 | 移动请求到集合根目录 |
-| 拖动请求到文件夹 | 移动请求到指定文件夹 |
-| 拖动请求到请求 | 在同一容器内重新排序请求 |
-
-### 12.3.3 视觉反馈
-
-- 拖动时元素半透明
-- 放置目标高亮显示（环形边框）
-- 插入位置显示指示线（上/下边框）
-
-#### 拖放位置计算
-
-请求拖放时根据光标位置动态计算插入位置（上方/下方）：
-
-```typescript
-function onDragOver(e: DragEvent, targetType: string, targetId: number) {
-  e.preventDefault()
-  
-  // 计算光标在目标元素中的相对位置
-  if (targetType === 'request') {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    const y = e.clientY - rect.top
-    const position = y < rect.height / 2 ? 'before' : 'after'
-    dropTarget.value = { type: targetType, id: targetId, position }
-  }
-}
-```
-
-这确保向下移动请求时能正确插入到目标下方。
-
-### 12.3.4 跨容器移动
-
-请求可以跨集合/文件夹移动：
-1. 拖动请求到目标位置
-2. 自动更新请求的 `collectionId` 和 `folderId`
-3. 自动更新排序顺序
-
-文件夹可以跨集合移动：
-1. 拖动文件夹到目标集合
-2. 自动更新文件夹的 `collectionId`
-3. 文件夹内的请求一同移动
-
-## 13. 请求体类型支持
-
-### 13.1 支持的 Body 类型
-
-| 类型 | Content-Type | 说明 |
-|------|--------------|------|
-| none | - | 无请求体 |
-| json | application/json | JSON 格式 |
-| xml | application/xml | XML 格式 |
-| text | text/plain | 纯文本 |
-| form-data | multipart/form-data | 表单数据，支持键值对编辑 |
-
-### 13.2 自动请求头
-
-切换 Body 类型时自动添加/更新 Content-Type 请求头：
-- 如果已存在 Content-Type 头，更新其值
-- 如果不存在，添加新的 Content-Type 头
-- 选择 none 时移除 Content-Type 头
-
-Content-Length 由 Go http.Client 自动处理，无需手动设置。
-
-### 13.3 Form-Data 编辑
-
-Form-Data 使用键值对编辑器，数据以 JSON 数组格式存储在 body 字段中：
-
-```json
-[
-  {"key": "username", "value": "admin", "enabled": true},
-  {"key": "password", "value": "123456", "enabled": true}
-]
-```
-
-发送请求时自动转换为 multipart/form-data 格式。
-
-## 14. 系统代理支持
-
-应用自动支持系统代理设置：
-
-| 环境变量 | 用途 |
-|----------|------|
-| HTTP_PROXY | HTTP 请求代理 |
-| HTTPS_PROXY | HTTPS 请求代理 |
-| NO_PROXY | 不使用代理的主机列表 |
-
-Go 的 `http.DefaultTransport` 会自动读取这些环境变量并应用代理设置。
-
-## 15. 数据存储位置
-
-### 15.1 SQLite 数据库
-
-数据库文件存放在应用同级目录的 data 文件夹：
-
-```
-<exe_dir>/data/postme.db
-```
-
-### 15.2 WebView2 用户数据
-
-WebView2 的缓存、Cookie 等数据存放在用户配置目录：
-
-```
-Windows: %APPDATA%/postme/
-```
-
-通过 `WebviewUserDataPath` 配置，避免默认使用 `postme.exe` 作为文件夹名。
-
-## 16. 请求控制
-
-### 16.1 请求取消
-
-- Send 按钮在请求进行中变为 Cancel 按钮（红色）
-- 点击 Cancel 或按 ESC 取消当前请求
-- 取消后响应区显示 "请求已取消"
-- Go 后端使用 context.WithCancel 实现
-
-### 16.2 请求超时
-
-- 默认超时时间 30 秒
-- 直接输入数值，单位秒，允许小数（如 1.5）
-- 不能输入负数，最小值为 0
-- 0 表示不限制超时
-- 超时后响应区显示 "请求超时 (Xs)"
-- Go 后端使用 context.WithTimeout 实现
-
-### 16.3 响应区状态
-
-| 状态 | 图标 | 文字 |
-|------|------|------|
-| 空闲 | 📤 | 点击 Send 发送请求 |
-| 请求中 | ● (转圈) | 正在发送请求... |
-| 已取消 | ⊘ | 请求已取消 |
-| 超时 | ⏱ | 请求超时 (30s) |
-| 错误 | ✕ | 连接失败 / 错误信息 |
-
-## 17. 设置功能
-
-### 17.1 设置入口
-
-标题栏右侧添加设置按钮 `⚙`
-
-### 17.2 设置项
-
-| 分类 | 设置项 | 类型 | 默认值 | 说明 |
-|------|--------|------|--------|------|
-| 请求 | 请求超时时间 | 数字输入框 | 30 | 单位秒，允许小数，0表示不限制 |
-| 界面 | 主题 | 下拉 | 跟随系统 | 亮色/暗色/跟随系统 |
-| 界面 | 切换Tab自动定位 | 开关 | 开启 | - |
-
-### 17.3 设置弹窗
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  设置                                                       ✕   │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  请求                                                           │
-│  ───────────────────────────────────────────────────────────    │
-│                                                                 │
-│  请求超时时间                                                   │
-│  ┌───────────────────────────────┐                              │
-│  │  30                           │  秒                          │
-│  └───────────────────────────────┘                              │
-│  输入 0 表示不限制超时                                          │
-│                                                                 │
-│  界面                                                           │
-│  ───────────────────────────────────────────────────────────    │
-│                                                                 │
-│  主题                                                           │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │  跟随系统                                            ▼  │    │
-│  └─────────────────────────────────────────────────────────┘    │
-│                                                                 │
-│  切换 Tab 时自动定位侧边栏                                      │
-│  ┌────┐                                                         │
-│  │ ✓  │  开启                                                   │
-│  └────┘                                                         │
-│                                                                 │
-├─────────────────────────────────────────────────────────────────┤
-│                                              [ 取消 ]  [ 保存 ] │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 17.4 数据模型
-
-```sql
--- app_state 表添加字段
-ALTER TABLE app_state ADD COLUMN request_timeout REAL DEFAULT 30;
-ALTER TABLE app_state ADD COLUMN auto_locate_sidebar INTEGER DEFAULT 1;
-```
-
-## 18. 配置常量
-
-```go
-const (
-    // History 最大记录数
-    MaxHistoryRecords = 100
-
-    // 状态保存防抖时间
-    WindowResizeDebounce = 500  // ms
-    ContentEditDebounce  = 1000 // ms
-
-    // 默认窗口尺寸
-    DefaultWindowWidth  = 1200
-    DefaultWindowHeight = 800
-
-    // 默认侧边栏宽度
-    DefaultSidebarWidth = 260
-
-    // 默认分栏比例
-    DefaultSplitRatio = 50 // 百分比
-
-    // 请求超时
-    DefaultRequestTimeout = 30.0 // 秒，0 表示不限制，支持小数
-)
-```
-
-## 19. Tab 会话持久化
-
-应用重启时自动恢复所有打开的标签页（不包括响应数据）：
-
-### 19.1 保存时机
-
-- Tab 内容变更时自动保存（防抖 500ms）
-- Tab 列表变更时自动保存
-- 切换活动 Tab 时保存激活状态
-
-### 19.2 恢复内容
-
-| 内容 | 保存 | 说明 |
-|------|------|------|
-| Tab ID | ✓ | 唯一标识 |
-| 请求 ID | ✓ | 关联的保存请求 |
-| 标题 | ✓ | Tab 显示名称 |
-| 排序顺序 | ✓ | Tab 位置 |
-| 激活状态 | ✓ | 最后激活的 Tab |
-| 脏状态 | ✓ | 是否有未保存修改 |
-| 请求内容 | ✓ | method, url, headers, params, body, bodyType |
-| 响应数据 | ✗ | 仅内存保留 |
-
-## 20. Tab 交互增强
-
-### 20.1 双击固定 Tab
-
-- 单击侧栏请求：预览模式打开（斜体）
-- 双击侧栏请求：固定模式打开（常规样式）
-- 对于已打开的 Tab，双击切换并固定
-
-### 20.2 关闭未保存确认
-
-关闭有未保存更改的 Tab 时显示确认对话框：
-- 通过关闭按钮关闭
-- 通过 Ctrl+W 快捷键关闭
-
-### 20.3 Tab 同步
-
-- 侧栏重命名请求：Tab 标题实时更新
-- 侧栏删除请求：自动关闭对应 Tab
-- 切换 Tab：侧栏自动展开并高亮（可在设置中关闭）
-
-### 20.4 活动 Tab 高亮
-
-活动 Tab 底部显示强调色指示条（2px），在亮暗主题下都有明显的视觉区分。
-
-## 21. 系统代理支持（增强）
-
-### 21.1 Windows 系统代理读取
-
-应用可以读取 Windows 系统代理设置（Internet 选项中配置的代理）：
-
-```go
-// 从 Windows 注册表读取代理设置
-key, _ := registry.OpenKey(registry.CURRENT_USER,
-    `Software\Microsoft\Windows\CurrentVersion\Internet Settings`,
-    registry.QUERY_VALUE)
-
-proxyEnable, _, _ := key.GetIntegerValue("ProxyEnable")
-proxyServer, _, _ := key.GetStringValue("ProxyServer")
-```
-
-### 21.2 代理设置项
-
-在设置弹窗中添加代理开关：
-
-| 设置项 | 类型 | 默认值 | 说明 |
-|--------|------|--------|------|
-| 使用系统代理 | 开关 | 开启 | 是否使用 Windows 系统代理 |
-
-### 21.3 代理优先级
-
-1. Windows 系统代理（Internet 选项）
-2. 环境变量（HTTP_PROXY, HTTPS_PROXY）
-3. 无代理
-
-## 22. Cloudflare 兼容性
-
-为避免请求被 Cloudflare 等 WAF 拦截，HTTP 客户端进行了以下优化：
-
-### 22.1 TLS 配置
-
-- 使用现代 TLS 版本（1.2-1.3）
-- 配置浏览器常用密码套件顺序
-- 设置 EC 曲线优先级
-
-### 22.2 默认请求头
-
-未设置时自动添加以下请求头：
+| 快捷键 | 功能 |
+|--------|------|
+| `Ctrl+Enter` | 发送请求 |
+| `Ctrl+S` | 保存请求 |
+| `Ctrl+T` | 新建标签页 |
+| `Ctrl+W` | 关闭标签页 |
+| `Ctrl+B` | 切换侧边栏 |
+| `Ctrl+\` | 切换分栏方向 |
+| `Ctrl+F` | 查找 |
+| `Ctrl+H` | 替换 |
+| `Ctrl+Shift+F` | 格式化 JSON |
+
+## 10. 请求体类型
+
+| 类型 | Content-Type |
+|------|--------------|
+| none | - |
+| json | application/json |
+| xml | application/xml |
+| text | text/plain |
+| form-data | multipart/form-data |
+| x-www-form-urlencoded | application/x-www-form-urlencoded |
+| binary | application/octet-stream |
+
+## 11. 网络配置
+
+### 11.1 系统代理
+
+自动读取 Windows 系统代理设置，可在设置中开关。
+
+### 11.2 TLS 指纹
+
+使用 uTLS 模拟 Chrome 120 指纹，避免被 Cloudflare 等 WAF 拦截。
+
+### 11.3 默认请求头
 
 | 请求头 | 默认值 |
 |--------|--------|
-| User-Agent | Chrome 120 用户代理字符串 |
+| User-Agent | Chrome 120 |
 | Accept | `*/*` |
 | Accept-Language | `en-US,en;q=0.9` |
-
-### 22.3 HTTP/2 支持
-
-启用 HTTP/2 协议支持，提高与现代服务器的兼容性。
-
-## 23. 右键菜单增强
-
-### 23.1 菜单排他性
-
-同时只能显示一个右键菜单，打开新菜单时自动关闭其他菜单。
-
-### 23.2 请求菜单项
-
-| 菜单项 | 功能 |
-|--------|------|
-| 在新标签页打开 | 打开请求到新 Tab |
-| 复制 | 复制请求（名称加 "(copy)" 后缀） |
-| 重命名 | 修改请求名称 |
-| 删除 | 删除请求（需确认） |
-
-### 23.3 复制请求功能
-
-复制后的请求：
-- 名称后添加 "(copy)" 后缀
-- 保留所有请求设置（method, url, headers, params, body）
-- 自动打开新 Tab 编辑
-
-## 24. 表单自动提交
-
-KeyValueEditor 组件（用于请求头、请求参数、表单数据）支持自动添加行：
-
-- 在新行输入内容后，焦点离开时自动添加
-- Tab 在同一行的字段间切换不会触发添加
-- 无需手动点击 "+" 按钮
-
-## 25. 数据模型更新
-
-### 25.1 app_state 表新增字段
-
-```sql
-ALTER TABLE app_state ADD COLUMN use_system_proxy INTEGER DEFAULT 1;
-```
-
-### 25.2 AppState 模型更新
-
-```go
-type AppState struct {
-    // ... 其他字段
-    UseSystemProxy bool `json:"useSystemProxy" db:"use_system_proxy"`
-}
-```
-
-## 26. 双击交互增强
-
-### 26.1 侧边栏请求双击
-
-双击侧边栏中的请求项将固定该 Tab（从预览模式转为永久模式）。
-
-实现机制：
-- 延迟单击处理（200ms）以区分单击和双击
-- 双击时取消单击定时器
-- 双击时将预览 Tab 转为永久 Tab
-
-### 26.2 标题栏双击
-
-双击标题栏可最大化/还原窗口，与 Windows 原生行为一致。
-
-- 双击拖拽区域切换最大化状态
-- 按钮区域（`wails-no-drag`）不触发
-
-### 26.3 最大化按钮图标
-
-窗口最大化时，最大化按钮显示还原图标（两个重叠方框）：
-
-| 状态 | 图标 |
-|------|------|
-| 正常窗口 | `StopIcon`（单个方框） |
-| 最大化 | `Square2StackIcon`（两个重叠方框） |
-
-通过 Wails 窗口事件监听状态变化：
-- `wails:window-maximised`
-- `wails:window-restored`
-- `wails:window-unmaximised`
-
-## 27. 系统代理完整实现
-
-### 27.1 初始化时应用
-
-应用启动时根据设置自动应用代理配置：
-
-```typescript
-// App.vue loadData()
-const state = await api.getAppState()
-await api.setUseSystemProxy(state.useSystemProxy)
-```
-
-### 27.2 设置更改时应用
-
-设置保存时同步更新 HTTP 客户端：
-
-```typescript
-// SettingsModal.vue save()
-await api.setUseSystemProxy(localSettings.useSystemProxy)
-```
-
-### 27.3 后端 API
-
-```go
-// RequestHandler
-func (h *RequestHandler) SetUseSystemProxy(useProxy bool) {
-    if h.httpClient != nil {
-        h.httpClient.SetUseSystemProxy(useProxy)
-    }
-}
-```
-
-## 28. uTLS 突破 Cloudflare 检测
-
-### 28.1 TLS 指纹伪装
-
-使用 `github.com/refraction-networking/utls` 库模拟 Chrome 120 的 TLS 指纹：
-
-```go
-import utls "github.com/refraction-networking/utls"
-
-tlsConn := utls.UClient(conn, &utls.Config{
-    ServerName: hostname,
-}, utls.HelloChrome_120)
-```
-
-### 28.2 HTTP/2 支持
-
-根据 ALPN 协商结果选择协议：
-
-```go
-alpn := tlsConn.ConnectionState().NegotiatedProtocol
-if alpn == "h2" {
-    // 使用 HTTP/2
-    h2Transport := &http2.Transport{}
-    h2Conn, _ := h2Transport.NewClientConn(tlsConn)
-    return h2Conn.RoundTrip(req)
-}
-// 否则使用 HTTP/1.1
-```
-
-### 28.3 增强的请求头
-
-添加更多浏览器特征请求头：
-
-| 请求头 | 值 |
-|--------|-----|
 | Accept-Encoding | `gzip, deflate, br` |
-| Sec-Fetch-Dest | `empty` |
-| Sec-Fetch-Mode | `cors` |
-| Sec-Fetch-Site | `cross-site` |
 
-## 29. 请求体类型扩展
+## 12. 状态持久化
 
-### 29.1 支持的请求体类型
+### 12.1 存储策略
 
-| 类型 | 标签 | Content-Type | 用途 |
-|------|------|--------------|------|
-| none | None | - | 无请求体 |
-| form-data | Form Data | multipart/form-data | 文件上传、二进制数据 |
-| x-www-form-urlencoded | URL Encoded | application/x-www-form-urlencoded | 简单文本表单 |
-| binary | Binary | application/octet-stream | 二进制文件上传 |
-| json | JSON | application/json | JSON 数据 |
-| xml | XML | application/xml | XML 数据 |
-| text | Text | text/plain | 纯文本 |
+| 状态 | 存储位置 | 生命周期 |
+|------|----------|----------|
+| 窗口位置/大小 | SQLite | 永久 |
+| 布局设置 | SQLite | 永久 |
+| Tab 列表和内容 | SQLite | 永久 |
+| 侧边栏展开状态 | SQLite | 永久 |
+| 响应数据 | 内存 | 应用运行期间 |
 
-### 29.2 x-www-form-urlencoded 编码
+### 12.2 保存时机
 
-```go
-if req.BodyType == "x-www-form-urlencoded" && req.Body != "" {
-    var formItems []models.KeyValue
-    json.Unmarshal([]byte(req.Body), &formItems)
-    formData := url.Values{}
-    for _, item := range formItems {
-        if item.Enabled && item.Key != "" {
-            formData.Add(item.Key, item.Value)
-        }
-    }
-    bodyReader = strings.NewReader(formData.Encode())
-    contentType = "application/x-www-form-urlencoded"
-}
-```
+- 窗口大小改变（防抖 500ms）
+- Tab 内容编辑（防抖 500ms）
+- 展开/收起集合
+- 切换/关闭 Tab
 
-### 29.3 二进制文件上传
+### 12.3 启动优化
 
-前端使用 Wails 文件对话框选择文件：
+采用优先级加载策略：
+1. **Priority 1**（~50ms）：appState + tabs → 立即显示 UI
+2. **Priority 2**（~500ms）：collections → 侧边栏显示
+3. **Priority 3**（后台）：environments、history
 
-```typescript
-async function selectBinaryFile() {
-    const filePath = await window.runtime.OpenFileDialog({
-        Title: 'Select File',
-        Filters: [{ DisplayName: 'All Files (*.*)', Pattern: '*.*' }],
-    })
-    if (filePath) {
-        emit('update:body', filePath)  // body 存储文件路径
-    }
-}
-```
-
-后端读取并发送文件：
+## 13. 配置常量
 
 ```go
-if req.BodyType == "binary" && req.Body != "" {
-    file, err := os.Open(req.Body)  // body 是文件路径
-    if err != nil {
-        return nil, err
-    }
-    defer file.Close()
-    fileContent, _ := io.ReadAll(file)
-    bodyReader = bytes.NewReader(fileContent)
-    contentType = "application/octet-stream"
-}
+const (
+    MaxHistoryRecords     = 100   // 历史记录最大数
+    WindowResizeDebounce  = 500   // ms
+    ContentEditDebounce   = 500   // ms
+    DefaultWindowWidth    = 1200
+    DefaultWindowHeight   = 800
+    DefaultSidebarWidth   = 260
+    DefaultSplitRatio     = 50    // %
+    DefaultRequestTimeout = 30.0  // 秒
+)
 ```
+
+## 14. 设置项
+
+| 分类 | 设置项 | 默认值 |
+|------|--------|--------|
+| 请求 | 超时时间 | 30 秒 |
+| 界面 | 主题 | 跟随系统 |
+| 界面 | 切换Tab自动定位 | 开启 |
+| 网络 | 使用系统代理 | 开启 |
 
 ---
 
-## 30. UI 优化与视觉增强
-
-### 30.1 字体配置
-
-#### 30.1.1 等宽字体 - JetBrains Mono
-
-为提升代码和数据的可读性，应用使用 JetBrains Mono 等宽字体：
-
-**安装**：
-```bash
-npm install @fontsource/jetbrains-mono
-```
-
-**应用范围**：
-- CodeMirror 编辑器（13px，行高 1.6，禁用连字避免渲染问题）
-- URL 输入框（13px）
-- 键值对编辑器（12px）
-- 响应头值（12px）
-- 状态栏数值（12px）
-
-**连字设置**：
-```css
-/* 禁用连字，避免与语法高亮冲突 */
-.cm-editor {
-  font-variant-ligatures: none;
-}
-```
-
-### 30.2 按钮动效优化
-
-#### 30.2.1 Send 按钮
-
-**视觉增强**：
-- 添加 PaperAirplaneIcon 图标
-- 阴影效果：`shadow-md hover:shadow-lg`
-- 悬停动画：轻微上移 2px（`translateY(-2px)`）
-- GPU 加速：`will-change: transform` + `backface-visibility: hidden`
-- 子像素抗锯齿：`-webkit-font-smoothing: subpixel-antialiased`
-
-**技术要点**：
-- 使用 JS 控制 transform 而非 CSS hover，避免文字抖动
-- 明确指定 transition 属性（transform, box-shadow, background-color）
-
-#### 30.2.2 Cancel 按钮
-
-- 添加 XMarkIcon 图标
-- 红色主题：`bg-red-500 hover:bg-red-600`
-- 相同的上移动画和阴影效果
-
-#### 30.2.3 Update/Save 按钮
-
-- 仅阴影增强，无上移动画（避免亮色模式下视觉混淆）
-- `shadow-sm hover:shadow-md`
-
-### 30.3 状态码徽章设计
-
-#### 30.3.1 徽章样式
-
-状态码从纯文本改为徽章显示：
-
-**样式特点**：
-- 圆角徽章：`rounded-full`
-- 内边距：`px-3 py-1`
-- 带图标：成功显示 CheckCircleIcon，错误显示 XCircleIcon
-
-**颜色方案**：
-| 状态码范围 | 背景色（亮色） | 背景色（暗色） | 图标 |
-|-----------|--------------|--------------|------|
-| 2xx | 绿色 `bg-green-100` | `bg-green-900/30` | CheckCircleIcon |
-| 3xx | 蓝色 `bg-blue-100` | `bg-blue-900/30` | 无 |
-| 4xx | 黄色 `bg-yellow-100` | `bg-yellow-900/30` | XCircleIcon |
-| 5xx | 红色 `bg-red-100` | `bg-red-900/30` | XCircleIcon |
-
-### 30.4 Tab 视觉增强
-
-#### 30.4.1 活动状态
-
-- 活动 Tab 添加阴影提升：`shadow-md`（暗色）/ `shadow-sm`（亮色）
-- 平滑过渡动画：`transition-all duration-200`
-
-#### 30.4.2 状态指示
-
-**脏状态圆点**：
-- 脉冲动画：`animate-pulse`
-- 橙色圆点：`bg-accent`
-
-**预览模式**：
-- 斜体显示：`italic`
-- 半透明效果：`opacity-70`
-- 过渡动画：`transition-opacity`
-
-### 30.5 Toast 通知系统
-
-#### 30.5.1 动画效果
-
-**进入动画**（300ms）：
-- 从右侧滑入：`translate-x-full → translate-x-0`
-- 轻微缩放：`scale-95 → scale-100`
-- 淡入：`opacity-0 → opacity-100`
-
-**离开动画**（200ms）：
-- 轻微右移：`translate-x-0 → translate-x-8`
-- 轻微缩小：`scale-100 → scale-95`
-- 淡出：`opacity-100 → opacity-0`
-
-#### 30.5.2 成功图标动画
-
-成功类型 Toast 的 CheckCircleIcon 添加单次弹跳动画：
-
-```css
-@keyframes bounce-once {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
-}
-
-.animate-bounce-once {
-  animation: bounce-once 0.4s ease-out;
-}
-```
-
-#### 30.5.3 Toast 触发场景
-
-| 场景 | 类型 | 消息示例 |
-|------|------|---------|
-| 设置保存成功 | success | Settings saved successfully |
-| 设置保存失败 | error | Failed to save settings |
-| 删除集合成功 | success | Collection "XXX" deleted |
-| 删除文件夹成功 | success | Folder "XXX" deleted |
-| 删除请求成功 | success | Request "XXX" deleted |
-| 复制请求成功 | success | Request duplicated as "XXX" |
-| 请求执行错误 | error | Request failed / 错误消息 |
-| 环境变量重复 | error | Duplicate variable names: XXX |
-
-#### 30.5.4 视觉特性
-
-- 背景模糊：`backdrop-blur-sm`
-- 垂直堆叠：`space-y-2`
-- 自动消失：3 秒后自动移除
-- 手动关闭：支持点击 X 按钮关闭
-
-### 30.6 空状态设计
-
-#### 30.6.1 响应面板空状态
-
-**设计元素**：
-- 渐变光晕背景
-- 放大图标（16x16）
-- 分层文字：标题 + 描述
-- 快捷键提示：Ctrl+Enter
-
-**代码示例**：
-```vue
-<div class="relative">
-  <div class="absolute inset-0 bg-accent/5 blur-2xl rounded-full"></div>
-  <PaperAirplaneIcon class="w-16 h-16 mb-6 opacity-40 relative" />
-</div>
-<p class="text-lg font-medium mb-2">Ready to send</p>
-<p class="text-sm mb-4">Click Send to make a request</p>
-<div class="flex items-center gap-2 text-xs">
-  <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send
-</div>
-```
-
-### 30.7 加载动画
-
-#### 30.7.1 脉冲圆环设计
-
-**视觉层次**：
-- 外层：脉冲圆环（`animate-ping`，`bg-accent/20`）
-- 内层：旋转 spinner（`animate-spin`，`border-accent`）
-
-**文字优化**：
-- 标题：`text-lg font-medium`
-- 描述：`text-sm`
-
-### 30.8 窗口控制优化
-
-#### 30.8.1 最大化/恢复按钮
-
-**状态同步修复**：
-- 移除乐观更新，完全依赖 Wails 窗口事件
-- `wails:window-restored` 事件中检查实际最大化状态
-- 确保图标始终与窗口状态一致
-
-**图标显示**：
-- 最大化状态：显示 Square2StackIcon（恢复图标）
-- 非最大化状态：显示 StopIcon（最大化图标）
-
-### 30.9 性能优化技巧
-
-#### 30.9.1 GPU 加速
-
-关键动画元素使用 GPU 加速属性：
-```css
-will-change: transform;
-backface-visibility: hidden;
--webkit-font-smoothing: subpixel-antialiased;
-```
-
-#### 30.9.2 过渡属性优化
-
-避免 `transition-all`，明确指定过渡属性：
-```css
-transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-```
-
-#### 30.9.3 字体渲染
-
-**连字问题**：
-- CodeMirror 中 XML 编辑时，连字（如 `<==`）会导致字符显示异常
-- 解决方案：`font-variant-ligatures: none`
-
-**抗锯齿**：
-- 使用 `subpixel-antialiased` 保证文字清晰度
-- 避免 transform 导致的模糊
-
-### 30.10 设计原则
-
-1. **渐进式增强**：基础功能正常，动画作为增强
-2. **性能优先**：避免过度动画影响性能
-3. **一致性**：主题色（橙色 `#d97706`）贯穿所有交互
-4. **反馈及时**：操作立即响应，状态变化清晰
-5. **适度克制**：Toast 只用于关键操作，避免干扰
-
----
-
-## 31. Bug 修复记录
-
-### 31.1 Tab 脏状态检测
-
-**问题**：GET 请求修改 body 内容不触发脏状态
-
-**原因**：
-- `computeDirty` 函数只在当前和原始方法都支持 body 时才比较
-- GET 不支持 body，导致跳过检测
-
-**修复**：
-```typescript
-// 移除方法类型限制，始终检测 body 变化
-if (tab.body !== orig.body) return true
-if (tab.bodyType !== orig.bodyType) return true
-```
-
-### 31.2 字体连字渲染问题
-
-**问题**：XML 中输入 `<==` 时，`<` 字符消失
-
-**原因**：
-- JetBrains Mono 连字功能将 `<==` 渲染成单个符号
-- 与 CodeMirror 的 XML 语法高亮冲突
-
-**修复**：
-```css
-.cm-editor {
-  font-variant-ligatures: none;
-}
-```
-
-### 31.3 按钮动画抖动
-
-**问题**：Send 按钮悬停时文字抖动
-
-**原因**：
-- `hover:scale-105` 缩放整个按钮，导致文字像素对齐问题
-
-**修复**：
-- 改用 `translateY(-2px)` 上移动画
-- 添加 GPU 加速和子像素抗锯齿
-
-### 31.4 窗口状态图标错误（已彻底修复）
-
-**问题**：最大化 → 最小化 → 恢复后，restore 按钮图标显示错误
-
-**根本原因**：
-- Windows 窗口事件触发时序不确定
-- 事件触发时窗口动画可能未完成
-- 乐观更新与事件更新产生竞态条件
-
-**最终修复方案（三重保障）**：
-
-1. **移除所有乐观更新** (TitleBar.vue:126-143)
-   - 不再立即切换状态
-   - 完全依赖 Wails 事件
-   - 400ms 后检查并纠正（backup）
-
-2. **增加事件延迟** (App.vue:500-540)
-   - `maximised` 事件：300ms 延迟
-   - `restored` 事件：400ms 延迟
-   - `unmaximised` 事件：300ms 延迟
-   - 等待窗口动画完成后再检查状态
-
-3. **焦点检测备份** (App.vue:543-553)
-   - 窗口获得焦点时检查状态
-   - 自动纠正不一致
-   - 捕获所有遗漏的状态变化
-
-**调试日志**：
-```
-[Window] Maximised event - actual state: true/false
-[Window] Restored event - actual state: true/false
-[Window] Focus check - state mismatch corrected
-```
-
-### 31.5 窗口位置还原到左上角
-
-**问题**：点击 restore 按钮后，窗口位置错误地还原到屏幕左上角 (0, 0)
-
-**原因**：
-- `wails:window-restored` 和 `unmaximised` 事件中立即保存位置
-- 事件触发时窗口位置尚未更新
-- 保存了错误的位置数据
-
-**修复** (App.vue:497-525)：
-- 所有窗口事件添加 300-400ms 延迟
-- 等待窗口完全稳定后再保存位置
-- 确保保存的是正确的窗口坐标
-
-### 31.6 Tabs 偶尔丢失
-
-**问题**：应用启动后，之前打开的 tabs 全部消失
-
-**根本原因** (App.vue:372-408)：
-```typescript
-// 危险：先清空再保存
-await api.clearTabSessions()  // ← 如果这里成功
-for (tab of tabs) {
-  await api.saveTabSession(tab)  // ← 这里失败 = Tabs 永久丢失！
-}
-```
-
-**修复**：
-- 先构建所有 session 数据
-- 清空后立即保存全部
-- 每个 tab 独立错误处理
-- 添加详细日志：`[Tabs] Saved X tab sessions`
-
-### 31.7 启动性能问题
-
-**问题**：应用启动后有 2-3 秒延迟才显示 tabs
-
-**性能分析**：
-```
-Priority 1 (appState + tabs): 45ms ✓
-Priority 2 (tabs 初始化): 0.1ms ✓
-Priority 3 (后台数据): 2460ms ✗ ← 瓶颈！
-```
-
-**根本原因**：
-- 5 个并发数据库查询导致 SQLite 锁竞争
-- `Promise.all([getCollectionTree, getEnvironments, ...])` 同时执行
-- SQLite 不擅长高并发 → `SQLITE_BUSY` 错误
-
-**修复方案** (App.vue:217-250)：
-
-**优化前**：
-```typescript
-// 5 个并发查询 → 数据库锁
-await Promise.all([
-  setUseSystemProxy,
-  getCollectionTree,
-  getEnvironments,
-  getGlobalVariables,
-  getHistory,
-])
-```
-
-**优化后 - 串行化加载**：
-```typescript
-// 1. 非 DB 操作先执行
-await setUseSystemProxy()
-
-// 2. 关键 UI 数据优先
-const tree = await getCollectionTree()
-collectionStore.setTree(tree)  // 侧边栏立即显示
-
-// 3. 次要数据批量（限制并发）
-const [envs, globalVars] = await Promise.all([
-  getEnvironments(),
-  getGlobalVariables(),
-])
-
-// 4. 历史记录最后加载
-const history = await getHistory()
-```
-
-**效果**：
-- Tabs 在 ~50ms 内显示 ✓
-- Collections 约 200-500ms 后显示 ✓
-- 无数据库锁错误 ✓
-
-### 31.8 数据库锁冲突
-
-**问题**：`Failed to save app state: database is locked (5) (SQLITE_BUSY)`
-
-**原因**：
-- 启动时大量并发数据库操作
-- 保存和加载同时进行
-
-**修复** (App.vue:300-325)：
-- 检测到 `locked` 或 `BUSY` 错误
-- 自动延迟 500ms 重试
-- 避免数据丢失
-
----
-
-## 32. 性能优化总结
-
-### 32.1 启动流程优化
-
-**优先级设计**：
-1. **Priority 1**（阻塞，~45ms）：appState + tabs 数据
-2. **Priority 2**（阻塞，~0.1ms）：tabs 立即初始化并显示 ✓
-3. **Priority 3**（后台，~500ms）：collections → 侧边栏显示
-4. **Priority 4**（后台，~1s）：environments、history、originalStates
-
-**关键指标**：
-- Time to First Tab：**~50ms** ✓
-- Time to Full UI：**~500ms** ✓
-- 用户感知延迟：**接近零** ✓
-
-### 32.2 数据库并发控制
-
-**原则**：
-- 关键路径：串行加载，优先显示
-- 次要数据：控制并发度（≤2）
-- 非关键数据：延迟加载
-
-**SQLite 特性**：
-- 单写多读
-- 高并发导致锁等待
-- 推荐：串行化写入，控制并发读取
-
----
-
-## 33. 低优先级 UI 优化
-
-### 33.1 分隔线交互增强
-
-**实施内容** (App.vue:26-43, 620-647)：
-
-1. **拖动时视觉反馈**
-   - 拖动时显示橙色发光效果 (`box-shadow`)
-   - 实时显示分隔比例工具提示（`splitRatioPercent`）
-   - 悬停时显示提示："Double-click to reset"
-
-2. **双击重置功能**
-   - 双击分隔线恢复到 50% 比例
-   - `resetSplitRatio()` 函数实现
-
-3. **样式优化**
-   ```css
-   .resizer.resizing {
-     background: rgb(var(--color-accent));
-     box-shadow: 0 0 12px 2px rgba(var(--color-accent), 0.5);
-   }
-   ```
-
-**效果**：
-- 拖动时有明显视觉反馈 ✓
-- 可快速恢复默认布局 ✓
-- 实时比例显示便于精确调整 ✓
-
-### 33.2 键值对编辑器优化
-
-**实施内容** (KeyValueEditor.vue:1-10, 87-94, 175)：
-
-1. **行悬停高亮**
-   - 添加 `hover:bg-dark-hover/50` 和 `hover:bg-light-hover/50`
-   - 使用 `TransitionGroup` 实现行的淡入淡出动画
-
-2. **禁用项透明度**
-   - 未启用的行添加 `opacity-50` 样式
-   - 视觉上清晰区分启用/禁用状态
-
-3. **删除按钮反馈**
-   - 点击时添加 `active:scale-90` 缩放动画
-   - 提供即时的交互反馈
-
-4. **新增行动画**
-   ```vue
-   <TransitionGroup
-     enter-active-class="transition duration-200"
-     enter-from-class="opacity-0 scale-95"
-     enter-to-class="opacity-100 scale-100"
-   >
-   ```
-
-**效果**：
-- 交互更流畅，视觉层次更清晰 ✓
-- 删除操作有明确反馈 ✓
-
-### 33.3 模态框动画增强
-
-**实施内容** (ModalContainer.vue:14, 21-26)：
-
-1. **背景模糊效果**
-   - 添加 `backdrop-blur-sm` 到模态背景
-   - 增强层次感和聚焦效果
-
-2. **弹性动画**
-   - 进入动画：`scale-90` → `scale-100`（300ms）
-   - 退出动画：`scale-100` → `scale-95`（200ms）
-   - 更大的缩放范围产生弹性效果
-
-**效果**：
-- 模态框出现更有冲击力 ✓
-- 背景模糊引导用户注意力 ✓
-
-### 33.4 右键菜单样式增强
-
-**实施内容** (ContextMenu.vue:11-22)：
-
-1. **增强阴影**
-   - 暗色主题：`0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3)`
-   - 亮色主题：`0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1)`
-   - 替换原来的 `shadow-lg`，使用自定义多层阴影
-
-2. **动态样式应用**
-   - 通过 `:style` 绑定根据主题动态调整阴影
-   - 保留原有的出现动画（`scale-95`）
-
-**效果**：
-- 右键菜单更具立体感 ✓
-- 菜单层级更明显 ✓
-
-### 33.5 实施总结
-
-**改进的组件**：
-- ✅ 分隔线交互（App.vue）
-- ✅ 键值对编辑器（KeyValueEditor.vue）
-- ✅ 模态框（ModalContainer.vue）
-- ✅ 右键菜单（ContextMenu.vue）
-
-**未改进的组件**（已有足够优化或不需要）：
-- ⏭️ 侧边栏视觉层次：已有良好的图标和展开动画
-- ⏭️ Tab 视觉：已在中优先级完成
-
-**设计原则**：
-1. 动画时长控制在 200-300ms，避免过长
-2. 使用 GPU 加速的属性（transform、opacity）
-3. 禁用项通过透明度降低，保持可见性
-4. 所有动画都有明确的视觉目的
-
----
-
-## 34. 低优先级优化 Bug 修复
-
-### 34.1 分隔线样式问题
-
-**问题**：拖动分隔线时没有发光效果，双击无法重置
-
-**原因**：
-- 使用了未定义的 CSS 变量 `rgb(var(--color-accent))`
-- CSS 变量在 scoped 样式中不可用
-
-**修复** (App.vue:628-641)：
-```css
-.resizer:hover {
-  background: #d97706;
-}
-
-.resizer.resizing {
-  background: #d97706;
-  box-shadow: 0 0 12px 2px rgba(217, 119, 6, 0.5);
-}
-```
-
-**效果**：
-- 拖动时显示橙色发光效果 ✓
-- 双击功能正常工作 ✓
-
-### 34.2 模态框模糊延迟问题
-
-**问题**：
-- SettingsModal 和 EnvironmentModal 没有背景模糊
-- 删除确认模态框的模糊有延迟（backdrop 200ms，panel 200ms，不同步）
-
-**原因**：
-- SettingsModal 和 EnvironmentModal 没有添加 `backdrop-blur-sm`
-- backdrop 和 panel 的过渡时间不一致
-
-**修复** (SettingsModal.vue:3-23, EnvironmentModal.vue:3-23, ModalContainer.vue:6-14)：
-```vue
-<!-- Backdrop 过渡时间改为 300ms -->
-<TransitionChild
-  enter="ease-out duration-300"
-  enter-from="opacity-0"
-  enter-to="opacity-100"
-  leave="ease-in duration-200"
-  leave-from="opacity-100"
-  leave-to="opacity-0"
->
-  <div class="fixed inset-0 modal-backdrop backdrop-blur-sm" aria-hidden="true" />
-</TransitionChild>
-
-<!-- Panel 过渡时间同样为 300ms -->
-<TransitionChild
-  enter="ease-out duration-300"
-  enter-from="opacity-0 scale-90"
-  enter-to="opacity-100 scale-100"
-  leave="ease-in duration-200"
-  leave-from="opacity-100 scale-100"
-  leave-to="opacity-0 scale-95"
->
-```
-
-**效果**：
-- 所有模态框都有背景模糊 ✓
-- backdrop 和 panel 同步出现（都是 300ms） ✓
-- 过渡更自然流畅 ✓
-
-### 34.3 Request 编辑器滚动条问题
-
-**问题**：BodyEditor 的 CodeMirror 编辑器纵向不会出现滚动条
-
-**原因**：
-- CodeMirror 没有明确设置高度
-- 默认不会自动填充父容器
-
-**修复** (BodyEditor.vue:337-341)：
-```typescript
-// Set editor height to fill container
-extensions.push(EditorView.theme({
-  '&': { height: '100%' },
-  '.cm-scroller': { overflow: 'auto' }
-}))
-```
-
-**效果**：
-- CodeMirror 正确填充父容器 ✓
-- 内容超出时显示纵向滚动条 ✓
-
-### 34.4 Response 编辑器滚动条图标问题
-
-**问题**：ResponseBody 的纵向滚动条鼠标移上去时，显示横向拖动图标（`col-resize`）
-
-**原因**：
-- 滚动条容器可能继承了其他元素的 cursor 样式
-- 需要明确设置为 `cursor-default`
-
-**修复** (ResponseBody.vue:33)：
-```vue
-<div
-  class="flex-1 overflow-auto cursor-default"
-  :class="effectiveTheme === 'dark' ? 'bg-[#282c34]' : 'bg-white'"
->
-```
-
-**效果**：
-- 滚动条悬停时显示正常的默认光标 ✓
-- 不再显示拖动图标 ✓
-
----
-
-## 35. 低优先级优化二次修复
-
-### 35.1 分隔线拖动不生效
-
-**问题**：拖动分隔线时，分隔线一直在中间，比例不会改变
-
-**原因**：
-- RequestPanel 和 ResponsePanel 都设置为 `flex-1`
-- 平分空间，没有应用 `splitRatio` 的值
-
-**修复** (App.vue:24-51)：
-```vue
-<!-- Request Panel -->
-<RequestPanel
-  class="min-w-0 min-h-0"
-  :style="{
-    flex: `0 0 ${appState.splitRatio}%`
-  }"
-/>
-
-<!-- Response Panel -->
-<ResponsePanel
-  class="min-w-0 min-h-0"
-  :style="{
-    flex: `1 1 ${100 - appState.splitRatio}%`
-  }"
-/>
-```
-
-**效果**：
-- 拖动分隔线时，比例正确变化 ✓
-- 双击重置到 50% 正常工作 ✓
-
-### 35.2 背景模糊渐进过渡优化
-
-**问题**：
-- 弹框动画完成后，背景模糊才突然出现
-- 中间有时间差，不够平滑
-
-**期望效果**：
-- 弹框出现时，背景同时从无模糊逐渐到完全模糊
-- 背景模糊和弹框动画同步进行
-
-**修复** (ModalContainer.vue, SettingsModal.vue, EnvironmentModal.vue)：
-
-1. **自定义过渡类**：
-```vue
-<TransitionChild
-  enter="transition-all ease-out duration-300"
-  enter-from="opacity-0 blur-none"
-  enter-to="opacity-100 blur-active"
-  leave="transition-all ease-in duration-200"
-  leave-from="opacity-100 blur-active"
-  leave-to="opacity-0 blur-none"
->
-  <div class="fixed inset-0 modal-backdrop" aria-hidden="true" />
-</TransitionChild>
-```
-
-2. **自定义 CSS 类**：
-```css
-.blur-none {
-  backdrop-filter: blur(0px);
-}
-
-.blur-active {
-  backdrop-filter: blur(4px);
-}
-```
-
-**效果**：
-- 背景从 `blur(0px)` 渐变到 `blur(4px)` ✓
-- 与弹框动画同步（都是 300ms） ✓
-- 过渡更加平滑自然 ✓
-
-### 35.3 环境变量删除确认 ESC 键问题
-
-**问题**：环境变量管理面板的删除确认弹框，按 ESC 不会消失
-
-**原因**：
-- 确认框的 z-index 为 60
-- EnvironmentModal 的 z-index 为 50
-- HeadlessUI 可能没有正确识别最上层的 Dialog
-
-**修复** (ModalContainer.vue:4, 71, 141)：
-```vue
-<!-- 将所有确认框的 z-index 从 60 提升到 100 -->
-<Dialog as="div" class="relative z-[100]" @close="confirmModal.onCancel?.()">
-```
-
-**效果**：
-- 确认框在最上层（z-index: 100） ✓
-- 按 ESC 只关闭确认框，不影响父模态框 ✓
-- HeadlessUI 正确处理键盘事件 ✓
-
----
-
-## 36. 低优先级优化三次修复
-
-### 36.1 分隔线按下鼠标跳动问题
-
-**问题**：
-- 按下鼠标时，分隔线会突然向右移动约7%
-- 从 50% 跳到 57%，鼠标根本没有移动
-
-**原因**：
-- 原始计算使用 `e.clientX - rect.left` 绝对位置
-- 没有考虑分隔线自身的 4px 宽度
-- 导致首次计算时位置偏移
-
-**修复** (App.vue:106-148)：
-
-使用**相对偏移**而不是**绝对位置**：
-
-```typescript
-// 记录初始状态
-let startX = 0
-let startY = 0
-let startRatio = 50
-
-function startResize(e: MouseEvent) {
-  isResizing.value = true
-  startX = e.clientX
-  startY = e.clientY
-  startRatio = appState.splitRatio  // 记录当前比例
-  document.addEventListener('mousemove', onResize)
-  document.addEventListener('mouseup', stopResize)
-  e.preventDefault()
-}
-
-function onResize(e: MouseEvent) {
-  if (!isResizing.value) return
-
-  const container = document.querySelector('.flex-1.flex.overflow-hidden') as HTMLElement
-  if (!container) return
-
-  const rect = container.getBoundingClientRect()
-
-  if (appState.layoutDirection === 'horizontal') {
-    // 计算相对于起始位置的偏移
-    const deltaX = e.clientX - startX
-    const deltaRatio = (deltaX / rect.width) * 100
-    const newRatio = startRatio + deltaRatio  // 基于初始比例计算
-    appState.splitRatio = Math.max(20, Math.min(80, newRatio))
-  }
-}
-```
-
-**效果**：
-- 按下鼠标时分隔线不再跳动 ✓
-- 拖动平滑，比例准确 ✓
-- 双击重置正常工作 ✓
-
-### 36.2 背景模糊效果消失问题
-
-**问题**：
-- 模糊效果完全消失
-- 只看到弹框完成后界面变暗，没有模糊
-
-**原因**：
-- `transition-all` 不包含 `backdrop-filter` 属性
-- 需要明确指定过渡属性
-
-**修复** (ModalContainer.vue, SettingsModal.vue, EnvironmentModal.vue)：
-
-1. **添加自定义过渡类**：
-```vue
-<div class="fixed inset-0 modal-backdrop backdrop-transition" aria-hidden="true" />
-```
-
-2. **定义 CSS**：
-```css
-.backdrop-transition {
-  transition-property: opacity, backdrop-filter;
-  transition-timing-function: ease-out;
-  transition-duration: 300ms;
-}
-
-.blur-none {
-  backdrop-filter: blur(0px);
-}
-
-.blur-active {
-  backdrop-filter: blur(4px);
-}
-```
-
-**效果**：
-- 背景模糊效果恢复 ✓
-- 从无模糊逐渐过渡到 4px 模糊 ✓
-- 与弹框动画同步（300ms） ✓
-
-### 36.3 环境变量删除确认 ESC 键二次修复
-
-**问题**：z-index 提升到 100 后，ESC 键依旧无效
-
-**原因**：
-- HeadlessUI 可能同时触发两个 Dialog 的 ESC 事件
-- 需要明确阻止父模态框响应 ESC
-
-**修复** (EnvironmentModal.vue:2)：
-
-使用 HeadlessUI 的 `static` 属性：
-
-```vue
-<Dialog as="div" class="relative z-50" :static="isNestedModalOpen" @close="close">
-```
-
-**工作原理**：
-- 当 `isNestedModalOpen` 为 true 时，Dialog 变为 static
-- Static 模式下，Dialog 不响应 ESC 键和点击外部
-- 只有确认框（z-index: 100）响应 ESC 键
-- 确认框关闭后，`isNestedModalOpen` 变为 false，父模态框恢复响应
-
-**效果**：
-- 按 ESC 只关闭确认框 ✓
-- 父模态框（环境变量面板）保持打开 ✓
-- 确认框关闭后，父模态框恢复正常的 ESC 关闭功能 ✓
-
----
-
-## 37. 低优先级优化四次修复
-
-### 37.1 背景模糊效果问题（二次修复）
-
-**问题**：背景模糊效果依然不显示，只有变暗效果
-
-**原因**：
-- Vue 的 scoped CSS 不会应用到 Teleport 的元素
-- `backdrop-filter` 过渡没有正确生效
-
-**修复** (main.css:304-315)：
-
-将样式从 scoped 改为全局样式：
-
-```css
-/* Modal backdrop blur transition */
-.modal-backdrop {
-  transition: opacity 300ms ease-out, backdrop-filter 300ms ease-out;
-}
-
-.blur-none {
-  backdrop-filter: blur(0px);
-}
-
-.blur-active {
-  backdrop-filter: blur(4px);
-}
-```
-
-**关键点**：
-- 使用全局 CSS 而不是 scoped CSS ✓
-- 直接在 `.modal-backdrop` 上定义过渡 ✓
-- 移除所有组件中的重复 scoped 样式 ✓
-
-### 37.2 环境变量删除确认 ESC 键问题（三次修复）
-
-**问题**：z-index 100 和 static 属性都无效，ESC 仍然不能关闭确认框
-
-**分析**：
-- HeadlessUI 的 Dialog 组件基于层级和焦点管理 ESC 键
-- z-index 100 可能不够高，被其他元素覆盖
-- `static` 属性不是正确的解决方案
-
-**修复** (ModalContainer.vue:4, 71, 141)：
-
-将确认框的 z-index 大幅提升：
-
-```vue
-<!-- 从 z-[100] 提升到 z-[9999] -->
-<Dialog as="div" class="relative z-[9999]" @close="confirmModal.onCancel?.()">
-```
-
-**效果**：
-- 确认框在绝对最上层（z-index: 9999） ✓
-- HeadlessUI 正确识别焦点和层级 ✓
-- ESC 键优先关闭确认框 ✓
-
-**层级结构**：
-- EnvironmentModal: z-50
-- SettingsModal: z-50
-- ModalContainer (确认/输入/选择): z-9999
-
----
-
-## 38. 低优先级优化最终修复
-
-### 38.1 背景模糊效果最终方案
-
-**问题**：多次尝试后背景模糊仍然不显示
-
-**根本原因**：自定义过渡类在 HeadlessUI 的 TransitionChild 中无法正确应用
-
-**最终方案** (ModalContainer.vue, SettingsModal.vue, EnvironmentModal.vue)：
-
-直接使用 Tailwind 内置类 + 内联过渡样式：
-
-```vue
-<TransitionChild
-  enter="ease-out duration-300"
-  enter-from="opacity-0"
-  enter-to="opacity-100"
-  leave="ease-in duration-200"
-  leave-from="opacity-100"
-  leave-to="opacity-0"
-  as="template"
->
-  <div
-    class="fixed inset-0 modal-backdrop backdrop-blur-sm"
-    style="transition: opacity 300ms ease-out, backdrop-filter 300ms ease-out"
-    aria-hidden="true"
-  />
-</TransitionChild>
-```
-
-**关键点**：
-- 使用 `as="template"` 避免额外的包裹元素
-- 直接使用 Tailwind 的 `backdrop-blur-sm` 类
-- 内联样式明确指定过渡属性
-
-**效果**：✓ 背景模糊正常显示并平滑过渡
-
-### 38.2 环境变量删除确认 ESC 键最终方案
-
-**问题调试结果**：
-```
-[EnvironmentModal] close() called, isNestedModalOpen: true
-[EnvironmentModal] Blocked: nested modal is open
-```
-
-**分析**：
-- ESC 键只触发了 EnvironmentModal 的 @close 事件
-- **没有触发** ModalContainer 确认框的 @close 事件
-- HeadlessUI 不是按 z-index 判断哪个 Dialog 响应 ESC
-
-**最终方案** (EnvironmentModal.vue:413-441)：
-
-手动捕获 ESC 键事件，在捕获阶段阻止传播：
-
-```typescript
-// Handle ESC key manually when nested modal is open
-function handleKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && isNestedModalOpen.value) {
-    console.log('[EnvironmentModal] ESC captured, nested modal is open - preventing propagation')
-    // Stop the event from reaching this Dialog's close handler
-    event.stopPropagation()
-    event.preventDefault()
-  }
-}
-
-onMounted(() => {
-  // Listen at capture phase to intercept before HeadlessUI
-  document.addEventListener('keydown', handleKeyDown, true)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeyDown, true)
-})
-```
-
-**工作原理**：
-1. 在捕获阶段（`true`）监听键盘事件，比 HeadlessUI 更早拦截
-2. 当 ESC 键按下且嵌套模态框打开时，阻止事件传播
-3. 这样 EnvironmentModal 不会响应 ESC，确认框可以正常响应
-
-**效果**：✓ ESC 键正确关闭确认框，父模态框保持打开
-
-### 38.3 Favicon 404 错误修复
-
-**问题**：浏览器控制台报错 `Failed to load resource: favicon.ico 404`
-
-**原因**：
-- 浏览器自动请求网站图标文件
-- 项目没有提供 favicon.ico
-
-**修复**：
-
-1. **创建 public 目录并复制图标**：
-```bash
-mkdir frontend/public
-cp build/windows/icon.ico frontend/public/favicon.ico
-```
-
-2. **在 index.html 中添加引用** (frontend/index.html:6)：
-```html
-<link rel="icon" type="image/x-icon" href="/favicon.ico" />
-```
-
-**效果**：
-- ✓ 浏览器能正确加载图标
-- ✓ 不再有 404 错误
-- ✓ 浏览器标签页显示应用图标
-
----
-
-*文档最后更新：2026-02-01（所有 UI 优化和 Bug 修复完成）*
+*文档最后更新：2026-02-02*
