@@ -23,7 +23,7 @@
 | 层级 | 技术 |
 |------|------|
 | 框架 | [Wails](https://wails.io/) v2 |
-| 后端 | Go 1.25+ |
+| 后端 | Go 1.21+ |
 | 前端 | Vue 3 + TypeScript + Pinia |
 | UI | Tailwind CSS + Headless UI |
 | 编辑器 | CodeMirror 6 |
