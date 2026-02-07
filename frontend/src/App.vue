@@ -192,6 +192,18 @@ function handleKeydown(e: KeyboardEvent) {
     e.preventDefault()
     emitKeyboardAction('send')
   }
+  
+  // Ctrl+Tab - Next tab
+  if (e.ctrlKey && !e.shiftKey && e.key === 'Tab') {
+    e.preventDefault()
+    tabsStore.nextTab()
+  }
+  
+  // Ctrl+Shift+Tab - Previous tab
+  if (e.ctrlKey && e.shiftKey && e.key === 'Tab') {
+    e.preventDefault()
+    tabsStore.prevTab()
+  }
 }
 
 // Close active tab with unsaved changes confirmation

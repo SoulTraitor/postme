@@ -24,18 +24,22 @@
       />
       
       <!-- Key input -->
-      <input
-        type="text"
-        :value="item.key"
-        @input="updateItem(index, { key: ($event.target as HTMLInputElement).value })"
-        :placeholder="keyPlaceholder"
-        class="kv-input w-1/3 min-w-0 px-3 py-1.5 rounded-md border outline-none text-sm"
-        :class="[
-          effectiveTheme === 'dark'
-            ? 'bg-dark-surface border-dark-border text-white placeholder-gray-500 focus:border-accent'
-            : 'bg-light-surface border-light-border text-gray-900 placeholder-gray-400 focus:border-accent'
-        ]"
-      />
+      <div class="w-1/3 min-w-0">
+        <input
+          type="text"
+          :value="item.key"
+          @input="updateItem(index, { key: ($event.target as HTMLInputElement).value })"
+          @mouseenter="showTooltip($event, item.key, `key-${index}`)"
+          @mouseleave="hideTooltip"
+          :placeholder="keyPlaceholder"
+          class="kv-input w-full px-3 py-1.5 rounded-md border outline-none text-sm"
+          :class="[
+            effectiveTheme === 'dark'
+              ? 'bg-dark-surface border-dark-border text-white placeholder-gray-500 focus:border-accent'
+              : 'bg-light-surface border-light-border text-gray-900 placeholder-gray-400 focus:border-accent'
+          ]"
+        />
+      </div>
       
       <!-- Type selector for form-data -->
       <select
@@ -54,19 +58,25 @@
       </select>
       
       <!-- Value input (text) -->
-      <input
+      <div
         v-if="!showFileUpload || (item.type || 'text') === 'text'"
-        type="text"
-        :value="item.value"
-        @input="updateItem(index, { value: ($event.target as HTMLInputElement).value })"
-        :placeholder="valuePlaceholder"
-        class="kv-input flex-1 px-3 py-1.5 rounded-md border outline-none text-sm"
-        :class="[
-          effectiveTheme === 'dark'
-            ? 'bg-dark-surface border-dark-border text-white placeholder-gray-500 focus:border-accent'
-            : 'bg-light-surface border-light-border text-gray-900 placeholder-gray-400 focus:border-accent'
-        ]"
-      />
+        class="flex-1 min-w-0"
+      >
+        <input
+          type="text"
+          :value="item.value"
+          @input="updateItem(index, { value: ($event.target as HTMLInputElement).value })"
+          @mouseenter="showTooltip($event, item.value, `value-${index}`)"
+          @mouseleave="hideTooltip"
+          :placeholder="valuePlaceholder"
+          class="kv-input w-full px-3 py-1.5 rounded-md border outline-none text-sm"
+          :class="[
+            effectiveTheme === 'dark'
+              ? 'bg-dark-surface border-dark-border text-white placeholder-gray-500 focus:border-accent'
+              : 'bg-light-surface border-light-border text-gray-900 placeholder-gray-400 focus:border-accent'
+          ]"
+        />
+      </div>
       
       <!-- File picker (file type) -->
       <div v-else class="flex-1 flex items-center gap-2">
@@ -180,11 +190,27 @@
         <PlusIcon class="w-4 h-4" />
       </button>
     </div>
+    
+    <!-- Global tooltip (fixed position to avoid clipping) -->
+    <Teleport to="body">
+      <div
+        v-if="tooltipKey"
+        class="fixed z-[9999] px-2 py-1 text-xs rounded-md shadow-lg max-w-xs break-all whitespace-pre-wrap pointer-events-none"
+        :class="[
+          effectiveTheme === 'dark'
+            ? 'bg-neutral-700 text-white'
+            : 'bg-neutral-800 text-white'
+        ]"
+        :style="tooltipStyle"
+      >
+        {{ tooltipText }}
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, TransitionGroup } from 'vue'
+import { ref, computed, watch, TransitionGroup, Teleport } from 'vue'
 import { TrashIcon, PlusIcon } from '@heroicons/vue/24/outline'
 import { useAppStateStore } from '@/stores/appState'
 import type { KeyValue } from '@/types'
@@ -207,6 +233,33 @@ const localItems = ref<KeyValue[]>([...props.items])
 const newKey = ref('')
 const newValue = ref('')
 const newType = ref<'text' | 'file'>('text')
+
+// Tooltip state - track which input is showing tooltip
+const tooltipKey = ref<string | null>(null)
+const tooltipText = ref('')
+const tooltipStyle = ref<{ left: string; top: string }>({ left: '0', top: '0' })
+
+function showTooltip(event: MouseEvent, text: string, key: string) {
+  const target = event.currentTarget as HTMLInputElement
+  // Only show tooltip if text is actually overflowing
+  if (target.scrollWidth <= target.clientWidth) {
+    return
+  }
+  
+  const rect = target.getBoundingClientRect()
+  tooltipKey.value = key
+  tooltipText.value = text
+  // Position below the input, clamped to viewport
+  const left = Math.min(rect.left, window.innerWidth - 320)
+  tooltipStyle.value = {
+    left: `${Math.max(8, left)}px`,
+    top: `${rect.bottom + 4}px`
+  }
+}
+
+function hideTooltip() {
+  tooltipKey.value = null
+}
 
 // Track if we just emitted to avoid overwriting with stale props
 let justEmitted = false

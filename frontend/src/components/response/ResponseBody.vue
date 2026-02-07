@@ -160,6 +160,9 @@ function createEditor() {
     extensions.push(lightEditorTheme)
   }
   
+  // Enable line wrapping for long content
+  extensions.push(EditorView.lineWrapping)
+  
   let content = props.body
   
   // Try to format JSON

@@ -328,6 +328,22 @@ export const useTabsStore = defineStore('tabs', () => {
     return newTab
   }
 
+  // Switch to next tab (wrap around)
+  function nextTab() {
+    if (tabs.value.length <= 1) return
+    const currentIndex = activeTabIndex.value
+    const nextIndex = (currentIndex + 1) % tabs.value.length
+    activeTabId.value = tabs.value[nextIndex].id
+  }
+
+  // Switch to previous tab (wrap around)
+  function prevTab() {
+    if (tabs.value.length <= 1) return
+    const currentIndex = activeTabIndex.value
+    const prevIndex = (currentIndex - 1 + tabs.value.length) % tabs.value.length
+    activeTabId.value = tabs.value[prevIndex].id
+  }
+
   return {
     tabs,
     activeTabId,
@@ -348,5 +364,7 @@ export const useTabsStore = defineStore('tabs', () => {
     closeTabByRequestId,
     openHistoryAsNewTab,
     duplicateTab,
+    nextTab,
+    prevTab,
   }
 })

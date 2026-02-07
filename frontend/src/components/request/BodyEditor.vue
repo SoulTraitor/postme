@@ -332,7 +332,8 @@ function createEditor() {
     }, { dark: false }))
   }
 
-  // Set editor height to fill container
+  // Set editor height to fill container with line wrapping
+  extensions.push(EditorView.lineWrapping)
   extensions.push(EditorView.theme({
     '&': { height: '100%' },
     '.cm-scroller': { overflow: 'auto' }
