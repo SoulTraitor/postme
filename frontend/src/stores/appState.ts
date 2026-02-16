@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type { AppState, SidebarState } from '@/types'
+import { WindowSetBackgroundColour } from '../../wailsjs/runtime/runtime'
 
 // Import api lazily to avoid circular dependency
 let apiModule: typeof import('@/services/api') | null = null
@@ -44,32 +45,38 @@ export const useAppStateStore = defineStore('appState', () => {
   // Loading state
   const loading = ref(true)
 
+  // Track system dark mode preference reactively
+  const systemIsDark = ref(
+    typeof window !== 'undefined'
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+      : false
+  )
+
   // Current effective theme
   const effectiveTheme = computed(() => {
     if (theme.value === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      return systemIsDark.value ? 'dark' : 'light'
     }
     return theme.value
   })
 
   const isModalOpen = computed(() => modalOpenCount.value > 0)
 
-  // Apply theme to document
+  // Apply theme to document and window background
   watch(effectiveTheme, (newTheme) => {
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark')
+      WindowSetBackgroundColour(26, 26, 26, 255)
     } else {
       document.documentElement.classList.remove('dark')
+      WindowSetBackgroundColour(255, 255, 255, 255)
     }
   }, { immediate: true })
 
-  // Listen to system theme changes
+  // Listen to system theme changes — update reactive ref
   if (typeof window !== 'undefined') {
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      // Force reactivity update
-      if (theme.value === 'system') {
-        theme.value = 'system'
-      }
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      systemIsDark.value = e.matches
     })
   }
 
