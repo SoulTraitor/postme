@@ -14,9 +14,10 @@
     >
       {{ request.method }}
     </span>
-    <span 
+    <span
       class="flex-1 truncate text-sm"
       :class="effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'"
+      :title="displayName"
     >
       {{ displayName }}
     </span>

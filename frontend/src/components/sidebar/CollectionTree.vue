@@ -62,7 +62,7 @@
             :class="{ 'rotate-90': isExpanded('collection', col.collection.id) }"
           />
           <FolderIcon class="w-4 h-4 text-accent flex-shrink-0" />
-          <span class="flex-1 truncate text-sm" :class="effectiveTheme === 'dark' ? 'text-gray-200' : 'text-gray-800'">
+          <span class="flex-1 truncate text-sm" :class="effectiveTheme === 'dark' ? 'text-gray-200' : 'text-gray-800'" :title="col.collection.name">
             {{ col.collection.name }}
           </span>
         </div>
@@ -92,7 +92,7 @@
               />
               <FolderOpenIcon v-if="isExpanded('folder', folder.folder.id)" class="w-4 h-4 text-yellow-500 flex-shrink-0" />
               <FolderIcon v-else class="w-4 h-4 text-yellow-500 flex-shrink-0" />
-              <span class="flex-1 truncate text-sm" :class="effectiveTheme === 'dark' ? 'text-gray-200' : 'text-gray-800'">
+              <span class="flex-1 truncate text-sm" :class="effectiveTheme === 'dark' ? 'text-gray-200' : 'text-gray-800'" :title="folder.folder.name">
                 {{ folder.folder.name }}
               </span>
             </div>

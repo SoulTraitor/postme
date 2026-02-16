@@ -37,6 +37,7 @@
         tab.isPreview ? 'italic opacity-70' : '',
         effectiveTheme === 'dark' ? 'text-gray-300' : 'text-gray-700'
       ]"
+      :title="displayTitle"
     >
       {{ displayTitle }}
     </span>
