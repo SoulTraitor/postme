@@ -172,4 +172,4 @@ postme/
 
 ## 📄 License
 
-MIT
+[MIT](https://github.com/SoulTraitor/postme/blob/main/LICENSE)
