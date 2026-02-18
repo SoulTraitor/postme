@@ -27,8 +27,26 @@ func (h *DialogHandler) OpenFileDialog(title string) (string, error) {
 		Title: title,
 		Filters: []runtime.FileFilter{
 			{
+				DisplayName: "PostMe Files (*.postme)",
+				Pattern:     "*.postme",
+			},
+			{
 				DisplayName: "All Files (*.*)",
 				Pattern:     "*.*",
+			},
+		},
+	})
+}
+
+// SaveFileDialog opens a native file save dialog
+func (h *DialogHandler) SaveFileDialog(title string, defaultFilename string) (string, error) {
+	return runtime.SaveFileDialog(h.ctx, runtime.SaveDialogOptions{
+		Title:           title,
+		DefaultFilename: defaultFilename,
+		Filters: []runtime.FileFilter{
+			{
+				DisplayName: "PostMe Files (*.postme)",
+				Pattern:     "*.postme",
 			},
 		},
 	})
