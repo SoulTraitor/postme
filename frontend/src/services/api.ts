@@ -251,6 +251,16 @@ export const api = {
     await CollectionHandler.ReorderRequests(collectionId, folderId, ids)
   },
 
+  async exportCollection(id: number): Promise<void> {
+    await CollectionHandler.ExportCollection(id)
+  },
+
+  async importCollection(): Promise<Collection | null> {
+    const result = await CollectionHandler.ImportCollection()
+    if (!result) return null
+    return convertCollection(result)
+  },
+
   // Request operations
   async createRequest(request: Partial<Request>): Promise<Request> {
     const req = models.Request.createFrom({
