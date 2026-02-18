@@ -32,6 +32,14 @@
       >
         <FolderPlusIcon class="w-5 h-5" />
       </button>
+      <button
+        @click="importCollection"
+        class="p-1.5 rounded-md transition-colors"
+        :class="effectiveTheme === 'dark' ? 'hover:bg-dark-hover text-gray-400' : 'hover:bg-light-hover text-gray-500'"
+        title="Import Collection"
+      >
+        <ArrowUpTrayIcon class="w-5 h-5" />
+      </button>
     </div>
     
     <!-- Tree -->
@@ -146,9 +154,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { 
-  MagnifyingGlassIcon, 
-  PlusIcon, 
+import {
+  MagnifyingGlassIcon,
+  PlusIcon,
   FolderPlusIcon,
   ChevronRightIcon,
   FolderIcon,
@@ -156,6 +164,8 @@ import {
   PencilIcon,
   TrashIcon,
   DocumentDuplicateIcon,
+  ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/vue/24/outline'
 import { useAppStateStore } from '@/stores/appState'
 import { useCollectionStore } from '@/stores/collection'
@@ -218,6 +228,12 @@ const collectionMenuItems = computed<ContextMenuItem[]>(() => [
     label: 'Rename',
     icon: PencilIcon,
     action: () => renameCollection(),
+  },
+  {
+    id: 'export',
+    label: 'Export',
+    icon: ArrowDownTrayIcon,
+    action: () => exportCollection(),
   },
   {
     id: 'delete',
@@ -741,6 +757,26 @@ async function duplicateRequest() {
     if (toast) {
       toast.error('Failed to duplicate request')
     }
+  }
+}
+
+async function exportCollection() {
+  if (!selectedCollection.value) return
+  try {
+    await api.exportCollection(selectedCollection.value.id)
+  } catch (error) {
+    console.error('Failed to export collection:', error)
+  }
+}
+
+async function importCollection() {
+  try {
+    const collection = await api.importCollection()
+    if (collection) {
+      await collectionStore.loadTree()
+    }
+  } catch (error) {
+    console.error('Failed to import collection:', error)
   }
 }
 
