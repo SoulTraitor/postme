@@ -1,6 +1,9 @@
 package services
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/SoulTraitor/postme/internal/database/repository"
 	"github.com/SoulTraitor/postme/internal/models"
 	"github.com/jmoiron/sqlx"
@@ -192,4 +195,158 @@ func (s *CollectionService) ReorderRequests(collectionID int64, folderID *int64,
 		}
 	}
 	return nil
+}
+
+// GetCollectionTree retrieves a single collection's full tree
+func (s *CollectionService) GetCollectionTree(id int64) (*CollectionTree, error) {
+	collection, err := s.collectionRepo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	folders, err := s.folderRepo.GetByCollectionID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	allRequests, err := s.requestRepo.GetByCollectionID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Separate requests by folder
+	requestsByFolder := make(map[int64][]models.Request)
+	var directRequests []models.Request
+	for _, req := range allRequests {
+		if req.FolderID != nil {
+			requestsByFolder[*req.FolderID] = append(requestsByFolder[*req.FolderID], req)
+		} else {
+			directRequests = append(directRequests, req)
+		}
+	}
+
+	var folderTrees []FolderTree
+	for _, folder := range folders {
+		folderTrees = append(folderTrees, FolderTree{
+			Folder:   folder,
+			Requests: requestsByFolder[folder.ID],
+		})
+	}
+
+	return &CollectionTree{
+		Collection: *collection,
+		Folders:    folderTrees,
+		Requests:   directRequests,
+	}, nil
+}
+
+// ExportCollection converts a collection tree to an export file structure
+func (s *CollectionService) ExportCollection(id int64) (*models.ExportFile, error) {
+	tree, err := s.GetCollectionTree(id)
+	if err != nil {
+		return nil, err
+	}
+
+	exportFile := &models.ExportFile{
+		Version:    1,
+		ExportedAt: time.Now(),
+		Collection: models.ExportCollection{
+			Name:        tree.Collection.Name,
+			Description: tree.Collection.Description,
+		},
+	}
+
+	// Convert folders
+	for _, ft := range tree.Folders {
+		exportFolder := models.ExportFolder{
+			Name:      ft.Folder.Name,
+			SortOrder: ft.Folder.SortOrder,
+		}
+		for _, req := range ft.Requests {
+			exportFolder.Requests = append(exportFolder.Requests, convertToExportRequest(req))
+		}
+		exportFile.Collection.Folders = append(exportFile.Collection.Folders, exportFolder)
+	}
+
+	// Convert direct requests
+	for _, req := range tree.Requests {
+		exportFile.Collection.Requests = append(exportFile.Collection.Requests, convertToExportRequest(req))
+	}
+
+	return exportFile, nil
+}
+
+func convertToExportRequest(req models.Request) models.ExportRequest {
+	return models.ExportRequest{
+		Name:      req.Name,
+		Method:    req.Method,
+		URL:       req.URL,
+		Headers:   req.Headers,
+		Params:    req.Params,
+		Body:      req.Body,
+		BodyType:  req.BodyType,
+		SortOrder: req.SortOrder,
+	}
+}
+
+// ImportCollection creates a new collection from an export file
+func (s *CollectionService) ImportCollection(data *models.ExportFile) (*models.Collection, error) {
+	// Create collection
+	collection := &models.Collection{
+		Name:        data.Collection.Name,
+		Description: data.Collection.Description,
+	}
+	if err := s.collectionRepo.Create(collection); err != nil {
+		return nil, fmt.Errorf("failed to create collection: %w", err)
+	}
+
+	// Create folders and their requests
+	for _, ef := range data.Collection.Folders {
+		folder := &models.Folder{
+			CollectionID: collection.ID,
+			Name:         ef.Name,
+			SortOrder:    ef.SortOrder,
+		}
+		if err := s.folderRepo.Create(folder); err != nil {
+			return nil, fmt.Errorf("failed to create folder %q: %w", ef.Name, err)
+		}
+
+		for _, er := range ef.Requests {
+			req := &models.Request{
+				CollectionID: collection.ID,
+				FolderID:     &folder.ID,
+				Name:         er.Name,
+				Method:       er.Method,
+				URL:          er.URL,
+				Headers:      er.Headers,
+				Params:       er.Params,
+				Body:         er.Body,
+				BodyType:     er.BodyType,
+				SortOrder:    er.SortOrder,
+			}
+			if err := s.requestRepo.Create(req); err != nil {
+				return nil, fmt.Errorf("failed to create request %q: %w", er.Name, err)
+			}
+		}
+	}
+
+	// Create direct requests (not in any folder)
+	for _, er := range data.Collection.Requests {
+		req := &models.Request{
+			CollectionID: collection.ID,
+			Name:         er.Name,
+			Method:       er.Method,
+			URL:          er.URL,
+			Headers:      er.Headers,
+			Params:       er.Params,
+			Body:         er.Body,
+			BodyType:     er.BodyType,
+			SortOrder:    er.SortOrder,
+		}
+		if err := s.requestRepo.Create(req); err != nil {
+			return nil, fmt.Errorf("failed to create request %q: %w", er.Name, err)
+		}
+	}
+
+	return collection, nil
 }
