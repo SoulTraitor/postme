@@ -291,10 +291,23 @@ func convertToExportRequest(req models.Request) models.ExportRequest {
 
 // ImportCollection creates a new collection from an export file
 func (s *CollectionService) ImportCollection(data *models.ExportFile) (*models.Collection, error) {
+	// Determine sort order: place at the end
+	allCollections, err := s.collectionRepo.GetAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get collections: %w", err)
+	}
+	maxSortOrder := 0
+	for _, c := range allCollections {
+		if c.SortOrder > maxSortOrder {
+			maxSortOrder = c.SortOrder
+		}
+	}
+
 	// Create collection
 	collection := &models.Collection{
 		Name:        data.Collection.Name,
 		Description: data.Collection.Description,
+		SortOrder:   maxSortOrder + 1,
 	}
 	if err := s.collectionRepo.Create(collection); err != nil {
 		return nil, fmt.Errorf("failed to create collection: %w", err)
