@@ -31,11 +31,11 @@ func getWebviewUserDataPath() string {
 func main() {
 	// Create handlers
 	requestHandler := handlers.NewRequestHandler()
-	collectionHandler := handlers.NewCollectionHandler()
+	dialogHandler := handlers.NewDialogHandler()
+	collectionHandler := handlers.NewCollectionHandler(dialogHandler)
 	environmentHandler := handlers.NewEnvironmentHandler()
 	historyHandler := handlers.NewHistoryHandler()
 	appStateHandler := handlers.NewAppStateHandler()
-	dialogHandler := handlers.NewDialogHandler()
 
 	// Initialize database early to restore window state
 	if err := database.Init(); err != nil {

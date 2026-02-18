@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+
 	"github.com/SoulTraitor/postme/internal/database"
 	"github.com/SoulTraitor/postme/internal/models"
 	"github.com/SoulTraitor/postme/internal/services"
@@ -9,11 +13,12 @@ import (
 // CollectionHandler handles collection-related operations for the frontend
 type CollectionHandler struct {
 	service *services.CollectionService
+	dialog  *DialogHandler
 }
 
 // NewCollectionHandler creates a new CollectionHandler
-func NewCollectionHandler() *CollectionHandler {
-	return &CollectionHandler{}
+func NewCollectionHandler(dialog *DialogHandler) *CollectionHandler {
+	return &CollectionHandler{dialog: dialog}
 }
 
 // Init initializes the handler with database connection
@@ -105,4 +110,73 @@ func (h *CollectionHandler) ReorderFolders(collectionID int64, ids []int64) erro
 // ReorderRequests updates the sort order of requests in a collection/folder
 func (h *CollectionHandler) ReorderRequests(collectionID int64, folderID *int64, ids []int64) error {
 	return h.service.ReorderRequests(collectionID, folderID, ids)
+}
+
+// ExportCollection exports a collection to a .postme file
+func (h *CollectionHandler) ExportCollection(id int64) error {
+	// Get export data
+	exportData, err := h.service.ExportCollection(id)
+	if err != nil {
+		return err
+	}
+
+	// Open save dialog
+	defaultFilename := exportData.Collection.Name + ".postme"
+	filePath, err := h.dialog.SaveFileDialog("Export Collection", defaultFilename)
+	if err != nil {
+		return err
+	}
+	if filePath == "" {
+		return nil // User cancelled
+	}
+
+	// Marshal to JSON
+	data, err := json.MarshalIndent(exportData, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal export data: %w", err)
+	}
+
+	// Write to file
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
+}
+
+// ImportCollection imports a collection from a .postme file
+func (h *CollectionHandler) ImportCollection() (*models.Collection, error) {
+	// Open file dialog
+	filePath, err := h.dialog.OpenFileDialog("Import Collection")
+	if err != nil {
+		return nil, err
+	}
+	if filePath == "" {
+		return nil, nil // User cancelled
+	}
+
+	// Read file
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Unmarshal JSON
+	var exportFile models.ExportFile
+	if err := json.Unmarshal(data, &exportFile); err != nil {
+		return nil, fmt.Errorf("invalid file format: %w", err)
+	}
+
+	// Validate version
+	if exportFile.Version != 1 {
+		return nil, fmt.Errorf("unsupported file version: %d", exportFile.Version)
+	}
+
+	// Import into database
+	collection, err := h.service.ImportCollection(&exportFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return collection, nil
 }
