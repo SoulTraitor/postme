@@ -89,16 +89,19 @@
       <div class="flex-1 overflow-auto p-4">
         <ParamsEditor 
           v-if="activeRequestTab === 'params'"
+          :key="activeTab?.id"
           :params="activeTab?.params || []"
           @update:params="updateParams"
         />
         <HeadersEditor 
           v-else-if="activeRequestTab === 'headers'"
+          :key="activeTab?.id"
           :headers="activeTab?.headers || []"
           @update:headers="updateHeaders"
         />
         <BodyEditor 
           v-else-if="activeRequestTab === 'body'"
+          :key="activeTab?.id"
           :body="activeTab?.body || ''"
           :bodyType="activeTab?.bodyType || 'none'"
           @update:body="updateBody"
