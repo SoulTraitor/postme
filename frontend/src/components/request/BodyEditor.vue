@@ -236,20 +236,14 @@ function createEditor() {
     // Custom keymap first
     keymap.of([
       {
+        // Ctrl+Enter is handled by global keydown in App.vue
+        // Just prevent CodeMirror's default behavior and let the event bubble up
         key: 'Ctrl-Enter',
-        preventDefault: true,
-        run: () => {
-          emitKeyboardAction('send')
-          return true
-        },
+        run: () => true,
       },
       {
         key: 'Mod-Enter',
-        preventDefault: true,
-        run: () => {
-          emitKeyboardAction('send')
-          return true
-        },
+        run: () => true,
       },
       {
         key: 'Ctrl-h',
