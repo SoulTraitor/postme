@@ -33,13 +33,14 @@ func (r *AppStateRepository) Update(state *models.AppState) error {
 	_, err := r.db.Exec(`
 		UPDATE app_state SET
 			window_width = ?, window_height = ?, window_x = ?, window_y = ?,
+			window_position_mode = ?,
 			window_maximized = ?, sidebar_open = ?, sidebar_width = ?,
 			layout_direction = ?, split_ratio = ?, theme = ?,
 			active_env_id = ?, request_timeout = ?, auto_locate_sidebar = ?,
 			use_system_proxy = ?, request_panel_tab = ?, updated_at = ?
 		WHERE id = 1
 	`, state.WindowWidth, state.WindowHeight, state.WindowX, state.WindowY,
-		state.WindowMaximized, state.SidebarOpen, state.SidebarWidth,
+		state.WindowPositionMode, state.WindowMaximized, state.SidebarOpen, state.SidebarWidth,
 		state.LayoutDirection, state.SplitRatio, state.Theme,
 		state.ActiveEnvID, state.RequestTimeout, state.AutoLocateSidebar,
 		state.UseSystemProxy, state.RequestPanelTab, time.Now())

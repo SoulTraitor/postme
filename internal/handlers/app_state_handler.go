@@ -28,6 +28,13 @@ func (h *AppStateHandler) Get() (*models.AppState, error) {
 
 // Update updates the app state
 func (h *AppStateHandler) Update(state models.AppState) error {
+	currentState, err := h.repo.Get()
+	if err == nil {
+		state.WindowX = currentState.WindowX
+		state.WindowY = currentState.WindowY
+		state.WindowPositionMode = currentState.WindowPositionMode
+	}
+
 	return h.repo.Update(&state)
 }
 

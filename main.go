@@ -54,6 +54,7 @@ func main() {
 	windowWidth := models.DefaultWindowWidth
 	windowHeight := models.DefaultWindowHeight
 	windowStartState := options.Normal
+	maximizeAfterRestore := savedState != nil && savedState.WindowMaximized && nativeWindowBoundsSupported()
 
 	// Apply saved window settings if available
 	if savedState != nil {
@@ -63,7 +64,7 @@ func main() {
 		if savedState.WindowHeight > 0 {
 			windowHeight = savedState.WindowHeight
 		}
-		if savedState.WindowMaximized {
+		if savedState.WindowMaximized && !maximizeAfterRestore {
 			windowStartState = options.Maximised
 		}
 	}
@@ -98,6 +99,9 @@ func main() {
 			dialogHandler.SetContext(ctx)
 
 			restoreSavedWindowBounds(ctx, savedState, windowWidth, windowHeight)
+			if maximizeAfterRestore {
+				runtime.WindowMaximise(ctx)
+			}
 		},
 		OnBeforeClose: func(ctx context.Context) (prevent bool) {
 			windowCtx := appCtx
@@ -108,8 +112,7 @@ func main() {
 			// Save window state before closing (window is still valid here)
 			isMaximized := runtime.WindowIsMaximised(windowCtx)
 			isMinimized := runtime.WindowIsMinimised(windowCtx)
-			w, h := runtime.WindowGetSize(windowCtx)
-			x, y := runtime.WindowGetPosition(windowCtx)
+			bounds, hasBounds := getCurrentWindowBounds(windowCtx)
 
 			// Get current state from database
 			currentState, err := repo.Get()
@@ -120,12 +123,17 @@ func main() {
 			// Update maximized state
 			currentState.WindowMaximized = isMaximized
 
-			// Save size/position only when normal (not maximized/minimized) and size is valid
-			if !isMaximized && !isMinimized && shouldSaveWindowBounds(windowCtx, x, y, w, h) {
-				currentState.WindowWidth = w
-				currentState.WindowHeight = h
-				currentState.WindowX = &x
-				currentState.WindowY = &y
+			// Save size only for normal windows. On macOS, keep a native position anchor even when maximized.
+			if !isMinimized && hasBounds && shouldSaveWindowBounds(windowCtx, bounds) {
+				if !isMaximized {
+					currentState.WindowWidth = bounds.width
+					currentState.WindowHeight = bounds.height
+				}
+				if !isMaximized || nativeWindowBoundsSupported() {
+					currentState.WindowX = &bounds.x
+					currentState.WindowY = &bounds.y
+					currentState.WindowPositionMode = bounds.positionMode
+				}
 			}
 
 			// Save to database

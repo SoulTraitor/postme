@@ -84,6 +84,7 @@ func RunMigrations(db *sqlx.DB) error {
 			window_height INTEGER DEFAULT 800,
 			window_x INTEGER,
 			window_y INTEGER,
+			window_position_mode TEXT DEFAULT '',
 			window_maximized INTEGER DEFAULT 0,
 			sidebar_open INTEGER DEFAULT 1,
 			sidebar_width INTEGER DEFAULT 260,
@@ -130,7 +131,6 @@ func RunMigrations(db *sqlx.DB) error {
 
 		// Initialize global_variables with default values
 		`INSERT OR IGNORE INTO global_variables (id) VALUES (1)`,
-
 	}
 
 	for _, migration := range migrations {
@@ -143,6 +143,7 @@ func RunMigrations(db *sqlx.DB) error {
 	alterTableMigrations := []string{
 		`ALTER TABLE app_state ADD COLUMN use_system_proxy INTEGER DEFAULT 1`,
 		`ALTER TABLE app_state ADD COLUMN request_panel_tab TEXT DEFAULT 'params'`,
+		`ALTER TABLE app_state ADD COLUMN window_position_mode TEXT DEFAULT ''`,
 	}
 
 	for _, migration := range alterTableMigrations {

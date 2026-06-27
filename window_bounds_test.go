@@ -2,8 +2,8 @@ package main
 
 import "testing"
 
-func TestSavedWindowPositionUsableForSingleDisplay(t *testing.T) {
-	displays := []displaySize{{width: 1512, height: 982}}
+func TestRuntimeWindowPositionUsableForSingleDisplay(t *testing.T) {
+	displays := []displayBounds{{width: 1512, height: 982}}
 
 	tests := []struct {
 		name string
@@ -21,16 +21,16 @@ func TestSavedWindowPositionUsableForSingleDisplay(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := savedWindowPositionUsableForDisplays(tt.x, tt.y, 1200, 800, displays)
+			got := runtimeWindowPositionUsableForDisplays(tt.x, tt.y, 1200, 800, displays)
 			if got != tt.want {
-				t.Fatalf("savedWindowPositionUsableForDisplays() = %v, want %v", got, tt.want)
+				t.Fatalf("runtimeWindowPositionUsableForDisplays() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestSavedWindowPositionUsableForMultipleDisplays(t *testing.T) {
-	displays := []displaySize{
+func TestRuntimeWindowPositionUsableForMultipleDisplays(t *testing.T) {
+	displays := []displayBounds{
 		{width: 1512, height: 982},
 		{width: 1920, height: 1080},
 	}
@@ -49,16 +49,44 @@ func TestSavedWindowPositionUsableForMultipleDisplays(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := savedWindowPositionUsableForDisplays(tt.x, tt.y, 1200, 800, displays)
+			got := runtimeWindowPositionUsableForDisplays(tt.x, tt.y, 1200, 800, displays)
 			if got != tt.want {
-				t.Fatalf("savedWindowPositionUsableForDisplays() = %v, want %v", got, tt.want)
+				t.Fatalf("runtimeWindowPositionUsableForDisplays() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNativeWindowPositionUsableForDisplayBounds(t *testing.T) {
+	displays := []displayBounds{
+		{x: 0, y: 25, width: 1512, height: 900},
+		{x: 1512, y: 0, width: 1920, height: 1080},
+	}
+
+	tests := []struct {
+		name string
+		x    int
+		y    int
+		want bool
+	}{
+		{name: "primary display", x: 100, y: 100, want: true},
+		{name: "external display on right", x: 1700, y: 120, want: true},
+		{name: "far outside all displays", x: 6000, y: 120, want: false},
+		{name: "top edge too far above displays", x: 100, y: 1400, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := nativeWindowPositionUsableForDisplays(tt.x, tt.y, 1200, 800, displays)
+			if got != tt.want {
+				t.Fatalf("nativeWindowPositionUsableForDisplays() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
 func TestClampWindowSizeForDisplays(t *testing.T) {
-	displays := []displaySize{{width: 1440, height: 900}}
+	displays := []displayBounds{{width: 1440, height: 900}}
 
 	tests := []struct {
 		name       string
