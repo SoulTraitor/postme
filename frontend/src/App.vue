@@ -93,6 +93,7 @@ const environmentStore = useEnvironmentStore()
 const historyStore = useHistoryStore()
 
 const effectiveTheme = computed(() => appState.effectiveTheme)
+const isMacPlatform = /macintosh|mac os x|iphone|ipad|ipod/i.test(navigator.userAgent)
 
 // Sync dark class to <html> element for CSS selectors to work with teleported modals
 watch(effectiveTheme, (theme) => {
@@ -155,40 +156,43 @@ function stopResize() {
 
 // Keyboard shortcuts
 function handleKeydown(e: KeyboardEvent) {
-  // Ctrl+B - Toggle sidebar
-  if (e.ctrlKey && e.key === 'b') {
+  const key = e.key.toLowerCase()
+  const primaryKey = isPrimaryShortcut(e)
+
+  // Primary+B - Toggle sidebar
+  if (primaryKey && key === 'b') {
     e.preventDefault()
     appState.toggleSidebar()
   }
   
-  // Ctrl+\ - Toggle layout direction
-  if (e.ctrlKey && e.key === '\\') {
+  // Primary+\ - Toggle layout direction
+  if (primaryKey && e.key === '\\') {
     e.preventDefault()
     appState.toggleLayoutDirection()
   }
   
-  // Ctrl+T - New tab
-  if (e.ctrlKey && e.key === 't') {
+  // Primary+T - New tab
+  if (primaryKey && key === 't') {
     e.preventDefault()
     tabsStore.addTab()
   }
   
-  // Ctrl+W - Close tab
-  if (e.ctrlKey && e.key === 'w') {
+  // Primary+W - Close tab
+  if (primaryKey && key === 'w') {
     e.preventDefault()
     if (tabsStore.activeTabId) {
       closeActiveTabWithConfirmation()
     }
   }
   
-  // Ctrl+S - Save request
-  if (e.ctrlKey && e.key === 's') {
+  // Primary+S - Save request
+  if (primaryKey && key === 's') {
     e.preventDefault()
     emitKeyboardAction('save')
   }
   
-  // Ctrl+Enter - Send request
-  if (e.ctrlKey && e.key === 'Enter') {
+  // Primary+Enter - Send request
+  if (primaryKey && e.key === 'Enter') {
     e.preventDefault()
     emitKeyboardAction('send')
   }
@@ -204,6 +208,10 @@ function handleKeydown(e: KeyboardEvent) {
     e.preventDefault()
     tabsStore.prevTab()
   }
+}
+
+function isPrimaryShortcut(e: KeyboardEvent) {
+  return isMacPlatform ? e.metaKey : e.ctrlKey
 }
 
 // Close active tab with unsaved changes confirmation

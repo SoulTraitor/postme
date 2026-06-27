@@ -15,7 +15,7 @@
         @click="appState.toggleSidebar"
         class="p-1.5 rounded-md transition-colors wails-no-drag"
         :class="effectiveTheme === 'dark' ? 'hover:bg-dark-hover' : 'hover:bg-light-hover'"
-        title="Toggle sidebar (Ctrl+B)"
+        title="Toggle sidebar (Ctrl/Cmd+B)"
       >
         <Bars3Icon class="w-5 h-5" />
       </button>

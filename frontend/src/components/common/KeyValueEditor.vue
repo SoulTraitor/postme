@@ -327,8 +327,8 @@ function onNewInputBlur(event: FocusEvent) {
 
 async function selectFile(index: number) {
   try {
-    const { OpenFileDialog } = await import('../../../wailsjs/go/handlers/DialogHandler')
-    const filePath = await OpenFileDialog('Select File')
+    const { OpenAnyFileDialog } = await import('../../../wailsjs/go/handlers/DialogHandler')
+    const filePath = await OpenAnyFileDialog('Select File')
     if (filePath) {
       updateItem(index, { value: filePath })
     }
@@ -339,8 +339,8 @@ async function selectFile(index: number) {
 
 async function selectNewFile() {
   try {
-    const { OpenFileDialog } = await import('../../../wailsjs/go/handlers/DialogHandler')
-    const filePath = await OpenFileDialog('Select File')
+    const { OpenAnyFileDialog } = await import('../../../wailsjs/go/handlers/DialogHandler')
+    const filePath = await OpenAnyFileDialog('Select File')
     if (filePath) {
       newValue.value = filePath
     }

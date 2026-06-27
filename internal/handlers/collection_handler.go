@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+	"unicode"
 
 	"github.com/SoulTraitor/postme/internal/database"
 	"github.com/SoulTraitor/postme/internal/models"
@@ -121,7 +123,7 @@ func (h *CollectionHandler) ExportCollection(id int64) error {
 	}
 
 	// Open save dialog
-	defaultFilename := exportData.Collection.Name + ".postme"
+	defaultFilename := sanitizeExportFilename(exportData.Collection.Name)
 	filePath, err := h.dialog.SaveFileDialog("Export Collection", defaultFilename)
 	if err != nil {
 		return err
@@ -147,7 +149,7 @@ func (h *CollectionHandler) ExportCollection(id int64) error {
 // ImportCollection imports a collection from a .postme file
 func (h *CollectionHandler) ImportCollection() (*models.Collection, error) {
 	// Open file dialog
-	filePath, err := h.dialog.OpenFileDialog("Import Collection")
+	filePath, err := h.dialog.OpenPostMeFileDialog("Import Collection")
 	if err != nil {
 		return nil, err
 	}
@@ -179,4 +181,65 @@ func (h *CollectionHandler) ImportCollection() (*models.Collection, error) {
 	}
 
 	return collection, nil
+}
+
+func sanitizeExportFilename(name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "collection.postme"
+	}
+
+	var b strings.Builder
+	b.Grow(len(name) + len(".postme"))
+
+	for _, r := range name {
+		if isInvalidFilenameRune(r) {
+			b.WriteRune('_')
+			continue
+		}
+		b.WriteRune(r)
+	}
+
+	filename := strings.Trim(b.String(), " .")
+	if filename == "" {
+		filename = "collection"
+	}
+	if isWindowsReservedFilename(filename) {
+		filename = "_" + filename
+	}
+	if !strings.HasSuffix(strings.ToLower(filename), ".postme") {
+		filename += ".postme"
+	}
+
+	return filename
+}
+
+func isWindowsReservedFilename(filename string) bool {
+	base := filename
+	if ext := strings.LastIndex(base, "."); ext >= 0 {
+		base = base[:ext]
+	}
+	base = strings.ToUpper(base)
+
+	switch base {
+	case "CON", "PRN", "AUX", "NUL",
+		"COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+		"LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9":
+		return true
+	default:
+		return false
+	}
+}
+
+func isInvalidFilenameRune(r rune) bool {
+	if r < 32 || unicode.IsControl(r) {
+		return true
+	}
+
+	switch r {
+	case '/', '\\', ':', '*', '?', '"', '<', '>', '|':
+		return true
+	default:
+		return false
+	}
 }

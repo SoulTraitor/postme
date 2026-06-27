@@ -21,8 +21,16 @@ func (h *DialogHandler) SetContext(ctx context.Context) {
 	h.ctx = ctx
 }
 
-// OpenFileDialog opens a native file selection dialog
+// OpenFileDialog opens a native file selection dialog.
+//
+// Deprecated: use OpenPostMeFileDialog or OpenAnyFileDialog to make the
+// expected file type explicit.
 func (h *DialogHandler) OpenFileDialog(title string) (string, error) {
+	return h.OpenPostMeFileDialog(title)
+}
+
+// OpenPostMeFileDialog opens a native file selection dialog for .postme files.
+func (h *DialogHandler) OpenPostMeFileDialog(title string) (string, error) {
 	return runtime.OpenFileDialog(h.ctx, runtime.OpenDialogOptions{
 		Title: title,
 		Filters: []runtime.FileFilter{
@@ -35,6 +43,13 @@ func (h *DialogHandler) OpenFileDialog(title string) (string, error) {
 				Pattern:     "*.*",
 			},
 		},
+	})
+}
+
+// OpenAnyFileDialog opens a native file selection dialog without file filters.
+func (h *DialogHandler) OpenAnyFileDialog(title string) (string, error) {
+	return runtime.OpenFileDialog(h.ctx, runtime.OpenDialogOptions{
+		Title: title,
 	})
 }
 

@@ -46,7 +46,7 @@
             ? 'hover:bg-dark-hover text-gray-400 hover:text-white'
             : 'hover:bg-light-hover text-gray-500 hover:text-gray-900'
         ]"
-        title="New Tab (Ctrl+T)"
+        title="New Tab (Ctrl/Cmd+T)"
       >
         <PlusIcon class="w-4 h-4" />
       </button>

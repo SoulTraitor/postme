@@ -28,7 +28,7 @@
               ? 'bg-dark-hover text-gray-300 hover:bg-dark-border'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           ]"
-          :title="activeTab?.requestId ? 'Update request (Ctrl+S)' : 'Save request (Ctrl+S)'"
+          :title="activeTab?.requestId ? 'Update request (Ctrl/Cmd+S)' : 'Save request (Ctrl/Cmd+S)'"
         >
           {{ activeTab?.requestId ? 'Update' : 'Save' }}
         </button>

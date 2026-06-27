@@ -195,8 +195,8 @@ function updateFormData(items: KeyValue[]) {
 
 async function selectBinaryFile() {
   try {
-    const { OpenFileDialog } = await import('../../../wailsjs/go/handlers/DialogHandler')
-    const filePath = await OpenFileDialog('Select File')
+    const { OpenAnyFileDialog } = await import('../../../wailsjs/go/handlers/DialogHandler')
+    const filePath = await OpenAnyFileDialog('Select File')
     if (filePath) {
       emit('update:body', filePath)
     }
@@ -236,14 +236,18 @@ function createEditor() {
     // Custom keymap first
     keymap.of([
       {
-        // Ctrl+Enter is handled by global keydown in App.vue
-        // Just prevent CodeMirror's default behavior and let the event bubble up
         key: 'Ctrl-Enter',
-        run: () => true,
+        run: () => {
+          emitKeyboardAction('send')
+          return true
+        },
       },
       {
         key: 'Mod-Enter',
-        run: () => true,
+        run: () => {
+          emitKeyboardAction('send')
+          return true
+        },
       },
       {
         key: 'Ctrl-h',

@@ -347,14 +347,14 @@ Tab 切换模式：Collections / History
 
 | 快捷键 | 功能 |
 |--------|------|
-| `Ctrl+Enter` | 发送请求 |
-| `Ctrl+S` | 保存请求 |
-| `Ctrl+T` | 新建标签页 |
-| `Ctrl+W` | 关闭标签页 |
+| `Ctrl/Cmd+Enter` | 发送请求 |
+| `Ctrl/Cmd+S` | 保存请求 |
+| `Ctrl/Cmd+T` | 新建标签页 |
+| `Ctrl/Cmd+W` | 关闭标签页 |
 | `Ctrl+Tab` | 切换到下一个标签页 |
 | `Ctrl+Shift+Tab` | 切换到上一个标签页 |
-| `Ctrl+B` | 切换侧边栏 |
-| `Ctrl+\` | 切换分栏方向 |
+| `Ctrl/Cmd+B` | 切换侧边栏 |
+| `Ctrl/Cmd+\` | 切换分栏方向 |
 | `Ctrl+F` | 查找 |
 | `Ctrl+H` | 替换 |
 | `Ctrl+Shift+F` | 格式化 JSON |
