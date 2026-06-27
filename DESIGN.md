@@ -9,8 +9,8 @@ PostMe 是一款基于 Wails 构建的轻量级 REST 请求发送工具，类似
 | 层级 | 技术选型 | 版本 |
 |------|----------|------|
 | 框架 | Wails | v2 |
-| 后端 | Go | 1.21+ |
-| 前端 | Vue 3 + TypeScript + Composition API | Vue 3.4+ |
+| 后端 | Go | 见 `go.mod` |
+| 前端 | Vue 3 + TypeScript + Composition API | 见 `frontend/package.json` |
 | UI 样式 | Tailwind CSS | 3.x |
 | UI 组件 | Headless UI | 1.x |
 | 图标 | Heroicons | 2.x |
@@ -24,9 +24,7 @@ PostMe 是一款基于 Wails 构建的轻量级 REST 请求发送工具，类似
 ```
 postme/
 ├── main.go                     # 应用入口
-├── app.go                      # 主应用结构体
 ├── wails.json                  # Wails 配置
-├── data/postme.db              # SQLite 数据库
 ├── internal/
 │   ├── models/                 # 数据模型
 │   ├── database/               # 数据库层
@@ -42,6 +40,8 @@ postme/
 │   └── public/favicon.ico      # 应用图标
 └── build/                      # 构建输出
 ```
+
+SQLite 数据库不固定保存在项目目录。默认使用系统用户配置目录，便携模式下可通过 `portable.flag` 指定或回退到 flag 同目录的 `data/postme.db`。
 
 ## 4. 数据模型
 
@@ -396,7 +396,7 @@ Windows 自动读取系统代理设置；其他平台使用 `HTTP_PROXY`、`HTTP
 
 | 状态 | 存储位置 | 生命周期 |
 |------|----------|----------|
-| 窗口位置/大小 | SQLite | 永久 |
+| 窗口位置/大小/最大化状态 | SQLite | 永久 |
 | 布局设置 | SQLite | 永久 |
 | Tab 列表和内容 | SQLite | 永久 |
 | 侧边栏展开状态 | SQLite | 永久 |
@@ -404,7 +404,8 @@ Windows 自动读取系统代理设置；其他平台使用 `HTTP_PROXY`、`HTTP
 
 ### 12.2 保存时机
 
-- 窗口大小改变（防抖 500ms）
+- 窗口大小/最大化状态改变（防抖 500ms）
+- 关闭应用时由后端保存最终窗口位置
 - Tab 内容编辑（防抖 500ms）
 - 展开/收起集合
 - 切换/关闭 Tab

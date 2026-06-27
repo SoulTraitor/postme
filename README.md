@@ -174,7 +174,7 @@ postme/
 │   │   ├── stores/         # Pinia 状态管理
 │   │   ├── composables/    # 组合式函数
 │   │   └── types/          # TypeScript 类型
-│   └── wailsjs/            # Wails 自动生成的绑定
+│   └── wailsjs/            # Wails 生成的绑定（构建/生成时创建）
 └── build/                  # 构建输出
 ```
 

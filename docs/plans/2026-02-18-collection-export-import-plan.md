@@ -59,7 +59,7 @@ type ExportRequest struct {
 
 **Step 2: Verify it compiles**
 
-Run: `cd F:/go/workspace/postme && go build ./internal/models/...`
+Run from the repository root: `go build ./internal/models/...`
 Expected: No errors
 
 **Step 3: Commit**
@@ -98,7 +98,7 @@ func (h *DialogHandler) SaveFileDialog(title string, defaultFilename string) (st
 
 **Step 2: Verify it compiles**
 
-Run: `cd F:/go/workspace/postme && go build ./internal/handlers/...`
+Run from the repository root: `go build ./internal/handlers/...`
 Expected: No errors
 
 **Step 3: Commit**
@@ -304,7 +304,7 @@ import (
 
 **Step 5: Verify it compiles**
 
-Run: `cd F:/go/workspace/postme && go build ./internal/services/...`
+Run from the repository root: `go build ./internal/services/...`
 Expected: No errors
 
 **Step 6: Commit**
@@ -474,7 +474,7 @@ collectionHandler := handlers.NewCollectionHandler(dialogHandler)
 
 **Step 7: Verify it compiles**
 
-Run: `cd F:/go/workspace/postme && go build ./...`
+Run from the repository root: `go build ./...`
 Expected: No errors
 
 **Step 8: Commit**
@@ -496,7 +496,7 @@ git commit -m "feat: add ExportCollection and ImportCollection handler methods"
 
 **Step 1: Generate Wails bindings**
 
-Run: `cd F:/go/workspace/postme && wails generate module`
+Run from the repository root: `wails generate module`
 Expected: Bindings regenerated in `frontend/wailsjs/`
 
 **Step 2: Verify new bindings exist**
@@ -666,7 +666,7 @@ git commit -m "feat: add Export menu item and Import button to sidebar"
 
 **Step 1: Build the application**
 
-Run: `cd F:/go/workspace/postme && wails build`
+Run from the repository root: `wails build`
 Expected: Build succeeds without errors
 
 **Step 2: Manual test checklist**
