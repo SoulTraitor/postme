@@ -16,8 +16,8 @@ type RequestHandler struct {
 	history    *services.HistoryService
 
 	// For request cancellation
-	mu           sync.Mutex
-	cancelFuncs  map[string]context.CancelFunc
+	mu          sync.Mutex
+	cancelFuncs map[string]context.CancelFunc
 }
 
 // NewRequestHandler creates a new RequestHandler
@@ -125,10 +125,10 @@ func (h *RequestHandler) Execute(params ExecuteRequestParams) (*models.Response,
 
 	// Save to history
 	historyEntry := &models.History{
-		Method:          params.Method,
-		URL:             params.URL,
-		RequestHeaders:  services.BuildRequestHeadersJSON(params.Headers),
-		RequestBody:     params.Body,
+		Method:         params.Method,
+		URL:            params.URL,
+		RequestHeaders: services.BuildRequestHeadersJSON(params.Headers),
+		RequestBody:    params.Body,
 	}
 
 	if resp != nil {
@@ -159,7 +159,7 @@ func (h *RequestHandler) CancelRequest(tabID string) {
 	}
 }
 
-// SetUseSystemProxy enables or disables system proxy usage for HTTP requests
+// SetUseSystemProxy enables or disables automatic proxy discovery for HTTP requests.
 func (h *RequestHandler) SetUseSystemProxy(useProxy bool) {
 	if h.httpClient != nil {
 		h.httpClient.SetUseSystemProxy(useProxy)

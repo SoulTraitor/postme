@@ -99,7 +99,7 @@
                       Use System Proxy
                     </label>
                     <p class="text-xs text-gray-500">
-                      Use Windows system proxy settings for HTTP requests
+                      Use Windows system proxy or HTTP(S)_PROXY environment variables
                     </p>
                   </div>
                   <button
@@ -292,4 +292,3 @@ async function save() {
   close()
 }
 </script>
-

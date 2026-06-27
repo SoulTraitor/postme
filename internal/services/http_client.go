@@ -211,7 +211,7 @@ func (c *HTTPClient) rebuildClient() {
 	}
 }
 
-// SetUseSystemProxy enables or disables system proxy usage
+// SetUseSystemProxy enables or disables automatic proxy discovery.
 func (c *HTTPClient) SetUseSystemProxy(useProxy bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -220,15 +220,15 @@ func (c *HTTPClient) SetUseSystemProxy(useProxy bool) {
 	c.rebuildClient()
 }
 
-// getProxyFunc returns a proxy function based on system settings
+// getProxyFunc returns a proxy function based on platform settings and environment variables.
 func (c *HTTPClient) getProxyFunc() func(*http.Request) (*url.URL, error) {
 	return func(req *http.Request) (*url.URL, error) {
-		// Try to get platform-specific system proxy first.
+		// Windows reads the system proxy from registry. Other platforms currently
+		// fall through to the standard HTTP(S)_PROXY environment variables below.
 		if proxyURL := getSystemProxyURL(); proxyURL != "" {
 			return url.Parse(proxyURL)
 		}
 
-		// Fall back to environment variables
 		return http.ProxyFromEnvironment(req)
 	}
 }

@@ -375,7 +375,7 @@ Tab 切换模式：Collections / History
 
 ### 11.1 系统代理
 
-自动读取 Windows 系统代理设置，可在设置中开关。
+Windows 自动读取系统代理设置；其他平台使用 `HTTP_PROXY`、`HTTPS_PROXY`、`NO_PROXY` 等环境变量，可在设置中开关。
 
 ### 11.2 TLS 指纹
 
