@@ -9,6 +9,7 @@ import (
 	"github.com/SoulTraitor/postme/internal/database"
 	"github.com/SoulTraitor/postme/internal/database/repository"
 	"github.com/SoulTraitor/postme/internal/handlers"
+	"github.com/SoulTraitor/postme/internal/models"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -50,8 +51,8 @@ func main() {
 	var appCtx context.Context
 
 	// Default window settings
-	windowWidth := 1200
-	windowHeight := 800
+	windowWidth := models.DefaultWindowWidth
+	windowHeight := models.DefaultWindowHeight
 	windowStartState := options.Normal
 
 	// Apply saved window settings if available
@@ -96,43 +97,40 @@ func main() {
 			appStateHandler.Init()
 			dialogHandler.SetContext(ctx)
 
-			// Restore window position if saved and valid
-			if savedState != nil && savedState.WindowX != nil && savedState.WindowY != nil {
-				x, y := *savedState.WindowX, *savedState.WindowY
-				// Only restore if position is reasonable (not negative or extremely large)
-				// This prevents invisible windows from bad saved state
-				if x >= -100 && x < 10000 && y >= -100 && y < 10000 {
-					runtime.WindowSetPosition(ctx, x, y)
-				}
-			}
+			restoreSavedWindowBounds(ctx, savedState, windowWidth, windowHeight)
 		},
 		OnBeforeClose: func(ctx context.Context) (prevent bool) {
+			windowCtx := appCtx
+			if windowCtx == nil {
+				windowCtx = ctx
+			}
+
 			// Save window state before closing (window is still valid here)
-			isMaximized := runtime.WindowIsMaximised(appCtx)
-			isMinimized := runtime.WindowIsMinimised(appCtx)
-			w, h := runtime.WindowGetSize(appCtx)
-			x, y := runtime.WindowGetPosition(appCtx)
-			
+			isMaximized := runtime.WindowIsMaximised(windowCtx)
+			isMinimized := runtime.WindowIsMinimised(windowCtx)
+			w, h := runtime.WindowGetSize(windowCtx)
+			x, y := runtime.WindowGetPosition(windowCtx)
+
 			// Get current state from database
 			currentState, err := repo.Get()
 			if err != nil {
 				return false
 			}
-			
+
 			// Update maximized state
 			currentState.WindowMaximized = isMaximized
-			
+
 			// Save size/position only when normal (not maximized/minimized) and size is valid
-			if !isMaximized && !isMinimized && w >= 800 && h >= 600 && x >= -100 && y >= -100 {
+			if !isMaximized && !isMinimized && shouldSaveWindowBounds(windowCtx, x, y, w, h) {
 				currentState.WindowWidth = w
 				currentState.WindowHeight = h
 				currentState.WindowX = &x
 				currentState.WindowY = &y
 			}
-			
+
 			// Save to database
 			_ = repo.Update(currentState)
-			
+
 			return false
 		},
 		OnShutdown: func(ctx context.Context) {
