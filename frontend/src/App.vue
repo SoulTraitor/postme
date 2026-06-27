@@ -514,16 +514,12 @@ async function updateWindowState(saveImmediately = false) {
       appState.windowMaximized = isMax
       
       if (!isMax) {
-        // Only save size/position when not maximized
+        // Only save size here. Window position is persisted by the Go backend on close.
         // @ts-ignore
         const size = await window.runtime.WindowGetSize()
-        // @ts-ignore
-        const pos = await window.runtime.WindowGetPosition()
-        
+
         appState.windowWidth = size.w
         appState.windowHeight = size.h
-        appState.windowX = pos.x
-        appState.windowY = pos.y
       }
       
       if (saveImmediately) {

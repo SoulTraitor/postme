@@ -29,8 +29,6 @@ export const useAppStateStore = defineStore('appState', () => {
   // Window state
   const windowWidth = ref(1200)
   const windowHeight = ref(800)
-  const windowX = ref<number | null>(null)
-  const windowY = ref<number | null>(null)
   const windowMaximized = ref(false)
   
   // Sidebar expanded states
@@ -170,8 +168,6 @@ export const useAppStateStore = defineStore('appState', () => {
     // Load window state
     windowWidth.value = state.windowWidth || 1200
     windowHeight.value = state.windowHeight || 800
-    windowX.value = state.windowX ?? null
-    windowY.value = state.windowY ?? null
     windowMaximized.value = state.windowMaximized || false
 
     for (const item of sidebarStateList) {
@@ -196,8 +192,6 @@ export const useAppStateStore = defineStore('appState', () => {
       requestPanelTab: requestPanelTab.value,
       windowWidth: windowWidth.value,
       windowHeight: windowHeight.value,
-      windowX: windowX.value,
-      windowY: windowY.value,
       windowMaximized: windowMaximized.value,
     }
   }
@@ -219,8 +213,6 @@ export const useAppStateStore = defineStore('appState', () => {
     removeModalOpen,
     windowWidth,
     windowHeight,
-    windowX,
-    windowY,
     windowMaximized,
     sidebarStates,
     sidebarTab,
