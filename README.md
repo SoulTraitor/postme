@@ -78,6 +78,27 @@ wails build
 - **Windows**: `build/bin/postme.exe`
 - **Linux**: `build/bin/postme`
 
+### 数据目录
+
+默认情况下，数据库会保存到系统用户配置目录，避免更新应用时覆盖用户数据：
+
+- **macOS**: `~/Library/Application Support/postme/postme.db`
+- **Windows**: `%AppData%\postme\postme.db`
+- **Linux**: `~/.config/postme/postme.db`
+
+如果需要便携模式或本地 build 测试隔离数据，可以创建 `portable.flag`。程序会依次查找可执行文件同目录、macOS `.app` 外层目录、以及 build 目录：
+
+- `portable.flag` 为空：使用 `portable.flag` 同目录的 `data/postme.db`
+- `portable.flag` 写入目录路径：使用文件中指定的目录；相对路径会按 `portable.flag` 所在目录解析
+
+macOS build 测试示例：
+
+```bash
+echo "$HOME/postme-test-data" > build/portable.flag
+wails build
+open build/bin/postme.app
+```
+
 ## 🔧 可选配置
 
 ### UPX 压缩
