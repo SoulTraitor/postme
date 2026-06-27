@@ -72,13 +72,19 @@ wails dev
 wails build
 ```
 
-构建产物位于 `build/bin/postme.exe`。
+构建产物位于 `build/bin/`：
+
+- **macOS**: `build/bin/postme.app`
+- **Windows**: `build/bin/postme.exe`
+- **Linux**: `build/bin/postme`
 
 ## 🔧 可选配置
 
 ### UPX 压缩
 
 [UPX](https://upx.github.io/) 是一个可执行文件压缩工具，可以显著减小最终产物体积（通常压缩 50-70%）。
+
+> **macOS 注意**：当前 UPX 对 macOS Mach-O 可执行文件默认不启用支持，`wails build -upx` 可能在压缩阶段失败。macOS 推荐直接使用 `wails build`。
 
 #### 安装 UPX
 
@@ -105,12 +111,9 @@ sudo apt install upx
 sudo pacman -S upx
 ```
 
-**macOS:**
-```bash
-brew install upx
-```
-
 #### 使用 UPX 构建
+
+Windows/Linux 可使用：
 
 ```bash
 wails build -upx

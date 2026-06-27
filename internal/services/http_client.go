@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +22,6 @@ import (
 	"github.com/andybalholm/brotli"
 	utls "github.com/refraction-networking/utls"
 	"golang.org/x/net/http2"
-	"golang.org/x/sys/windows/registry"
 )
 
 // Default User-Agent that mimics a modern browser
@@ -47,7 +45,7 @@ func (t *utlsTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if req.URL.Scheme == "https" {
 		return t.roundTripHTTPS(req)
 	}
-	
+
 	// For HTTP requests, use standard transport
 	transport := &http.Transport{
 		Proxy:             t.proxyFunc,
@@ -59,17 +57,17 @@ func (t *utlsTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func (t *utlsTransport) roundTripHTTPS(req *http.Request) (*http.Response, error) {
 	ctx := req.Context()
-	
+
 	// Determine target address
 	host := req.URL.Host
 	if !strings.Contains(host, ":") {
 		host = host + ":443"
 	}
-	
+
 	// Check for proxy
 	var conn net.Conn
 	var err error
-	
+
 	if t.proxyFunc != nil {
 		proxyURL, proxyErr := t.proxyFunc(req)
 		if proxyErr == nil && proxyURL != nil {
@@ -82,25 +80,25 @@ func (t *utlsTransport) roundTripHTTPS(req *http.Request) (*http.Response, error
 	} else {
 		conn, err = t.dialer.DialContext(ctx, "tcp", host)
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Create uTLS connection with Chrome fingerprint
 	tlsConn := utls.UClient(conn, &utls.Config{
 		ServerName: req.URL.Hostname(),
 	}, utls.HelloChrome_120)
-	
+
 	// Perform TLS handshake
 	if err := tlsConn.Handshake(); err != nil {
 		conn.Close()
 		return nil, err
 	}
-	
+
 	// Check if ALPN negotiated HTTP/2
 	alpn := tlsConn.ConnectionState().NegotiatedProtocol
-	
+
 	if alpn == "h2" {
 		// Use HTTP/2 transport
 		h2Transport := &http2.Transport{}
@@ -111,14 +109,14 @@ func (t *utlsTransport) roundTripHTTPS(req *http.Request) (*http.Response, error
 		}
 		return h2Conn.RoundTrip(req)
 	}
-	
+
 	// Use HTTP/1.1
 	transport := &http.Transport{
 		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return tlsConn, nil
 		},
 	}
-	
+
 	return transport.RoundTrip(req)
 }
 
@@ -132,12 +130,12 @@ func (t *utlsTransport) dialThroughProxy(ctx context.Context, proxyURL *url.URL,
 			proxyHost = proxyHost + ":80"
 		}
 	}
-	
+
 	conn, err := t.dialer.DialContext(ctx, "tcp", proxyHost)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Send CONNECT request
 	connectReq := &http.Request{
 		Method: "CONNECT",
@@ -145,18 +143,18 @@ func (t *utlsTransport) dialThroughProxy(ctx context.Context, proxyURL *url.URL,
 		Host:   targetHost,
 		Header: make(http.Header),
 	}
-	
+
 	// Add proxy authentication if present
 	if proxyURL.User != nil {
 		password, _ := proxyURL.User.Password()
 		connectReq.SetBasicAuth(proxyURL.User.Username(), password)
 	}
-	
+
 	if err := connectReq.Write(conn); err != nil {
 		conn.Close()
 		return nil, err
 	}
-	
+
 	// Read response
 	br := bufio.NewReader(conn)
 	resp, err := http.ReadResponse(br, connectReq)
@@ -164,12 +162,12 @@ func (t *utlsTransport) dialThroughProxy(ctx context.Context, proxyURL *url.URL,
 		conn.Close()
 		return nil, err
 	}
-	
+
 	if resp.StatusCode != 200 {
 		conn.Close()
 		return nil, &net.OpError{Op: "dial", Err: &proxyError{resp.Status}}
 	}
-	
+
 	return conn, nil
 }
 
@@ -186,7 +184,7 @@ func NewHTTPClient() *HTTPClient {
 	c := &HTTPClient{
 		useSystemProxy: true,
 	}
-	
+
 	c.rebuildClient()
 	return c
 }
@@ -196,17 +194,17 @@ func (c *HTTPClient) rebuildClient() {
 		Timeout:   30 * time.Second,
 		KeepAlive: 30 * time.Second,
 	}
-	
+
 	var proxyFunc func(*http.Request) (*url.URL, error)
 	if c.useSystemProxy {
 		proxyFunc = c.getProxyFunc()
 	}
-	
+
 	transport := &utlsTransport{
 		proxyFunc: proxyFunc,
 		dialer:    dialer,
 	}
-	
+
 	c.client = &http.Client{
 		Transport: transport,
 		Timeout:   0, // We handle timeout via context
@@ -217,7 +215,7 @@ func (c *HTTPClient) rebuildClient() {
 func (c *HTTPClient) SetUseSystemProxy(useProxy bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	c.useSystemProxy = useProxy
 	c.rebuildClient()
 }
@@ -225,50 +223,14 @@ func (c *HTTPClient) SetUseSystemProxy(useProxy bool) {
 // getProxyFunc returns a proxy function based on system settings
 func (c *HTTPClient) getProxyFunc() func(*http.Request) (*url.URL, error) {
 	return func(req *http.Request) (*url.URL, error) {
-		// Try to get Windows system proxy
-		if runtime.GOOS == "windows" {
-			proxyURL := getWindowsSystemProxy()
-			if proxyURL != "" {
-				return url.Parse(proxyURL)
-			}
+		// Try to get platform-specific system proxy first.
+		if proxyURL := getSystemProxyURL(); proxyURL != "" {
+			return url.Parse(proxyURL)
 		}
+
 		// Fall back to environment variables
 		return http.ProxyFromEnvironment(req)
 	}
-}
-
-// getWindowsSystemProxy reads the Windows system proxy settings from registry
-func getWindowsSystemProxy() string {
-	if runtime.GOOS != "windows" {
-		return ""
-	}
-
-	key, err := registry.OpenKey(registry.CURRENT_USER,
-		`Software\Microsoft\Windows\CurrentVersion\Internet Settings`,
-		registry.QUERY_VALUE)
-	if err != nil {
-		return ""
-	}
-	defer key.Close()
-
-	// Check if proxy is enabled
-	proxyEnable, _, err := key.GetIntegerValue("ProxyEnable")
-	if err != nil || proxyEnable == 0 {
-		return ""
-	}
-
-	// Get proxy server
-	proxyServer, _, err := key.GetStringValue("ProxyServer")
-	if err != nil || proxyServer == "" {
-		return ""
-	}
-
-	// If it doesn't have a scheme, add http://
-	if !strings.HasPrefix(proxyServer, "http://") && !strings.HasPrefix(proxyServer, "https://") {
-		proxyServer = "http://" + proxyServer
-	}
-
-	return proxyServer
 }
 
 // ExecuteRequest represents the request to execute
@@ -354,7 +316,7 @@ func (c *HTTPClient) Execute(ctx context.Context, req ExecuteRequest) (*models.R
 			return nil, fmt.Errorf("failed to open binary file: %w", err)
 		}
 		defer file.Close()
-		
+
 		// Read file into buffer
 		fileContent, err := io.ReadAll(file)
 		if err != nil {
@@ -406,12 +368,12 @@ func (c *HTTPClient) Execute(ctx context.Context, req ExecuteRequest) (*models.R
 	if httpReq.Header.Get("Accept-Language") == "" {
 		httpReq.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	}
-	
+
 	// Set Accept-Encoding for compression (browser-like)
 	if httpReq.Header.Get("Accept-Encoding") == "" {
 		httpReq.Header.Set("Accept-Encoding", "gzip, deflate, br")
 	}
-	
+
 	// Set Sec-Fetch headers (modern browser behavior)
 	if httpReq.Header.Get("Sec-Fetch-Dest") == "" {
 		httpReq.Header.Set("Sec-Fetch-Dest", "empty")
