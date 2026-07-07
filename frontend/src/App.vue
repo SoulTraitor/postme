@@ -156,6 +156,8 @@ function stopResize() {
 
 // Keyboard shortcuts
 function handleKeydown(e: KeyboardEvent) {
+  if (e.defaultPrevented) return
+
   const key = e.key.toLowerCase()
   const primaryKey = isPrimaryShortcut(e)
 
@@ -193,6 +195,8 @@ function handleKeydown(e: KeyboardEvent) {
   
   // Primary+Enter - Send request
   if (primaryKey && e.key === 'Enter') {
+    if (isFromCodeMirror(e)) return
+
     e.preventDefault()
     emitKeyboardAction('send')
   }
@@ -212,6 +216,10 @@ function handleKeydown(e: KeyboardEvent) {
 
 function isPrimaryShortcut(e: KeyboardEvent) {
   return isMacPlatform ? e.metaKey : e.ctrlKey
+}
+
+function isFromCodeMirror(e: KeyboardEvent) {
+  return e.target instanceof Element && e.target.closest('.cm-editor')
 }
 
 // Close active tab with unsaved changes confirmation
