@@ -123,7 +123,7 @@
         </div>
         
         <!-- Tab content -->
-        <div class="flex-1 overflow-auto">
+        <div class="flex-1 min-h-0 overflow-auto">
           <ResponseBody 
             v-if="activeResponseTab === 'body'"
             :body="responseState.response.body"

@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex flex-col">
+  <div class="h-full min-h-0 flex flex-col">
     <!-- Actions bar -->
     <div class="flex items-center gap-2 px-4 py-2 border-b" :class="effectiveTheme === 'dark' ? 'border-dark-border' : 'border-light-border'">
       <!-- Format button -->
@@ -31,10 +31,10 @@
     
     <!-- Body content -->
     <div
-      class="flex-1 overflow-auto cursor-default"
+      class="flex-1 min-h-0 overflow-hidden cursor-default"
       :class="effectiveTheme === 'dark' ? 'bg-[#282c34]' : 'bg-white'"
     >
-      <div ref="editorContainer" class="h-full" />
+      <div ref="editorContainer" class="h-full min-h-0" />
     </div>
   </div>
 </template>
@@ -43,10 +43,10 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStateStore } from '@/stores/appState'
 import { EditorView, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine, keymap } from '@codemirror/view'
-import { EditorState, Prec } from '@codemirror/state'
+import { EditorState } from '@codemirror/state'
 import { foldGutter, indentOnInput, bracketMatching, foldKeymap } from '@codemirror/language'
 import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
-import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
+import { highlightSelectionMatches, search, searchKeymap } from '@codemirror/search'
 import { closeBrackets, autocompletion, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete'
 import { json } from '@codemirror/lang-json'
 import { xml } from '@codemirror/lang-xml'
@@ -109,6 +109,11 @@ const lightEditorTheme = EditorView.theme({
   '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': { backgroundColor: '#b4d7ff' },
 }, { dark: false })
 
+const editorLayoutTheme = EditorView.theme({
+  '&': { height: '100%' },
+  '.cm-scroller': { overflow: 'auto' },
+})
+
 function createEditor() {
   if (!editorContainer.value) return
   
@@ -130,6 +135,9 @@ function createEditor() {
     rectangularSelection(),
     crosshairCursor(),
     highlightActiveLine(),
+    search({
+      scrollToMatch: (range) => EditorView.scrollIntoView(range, { y: 'center' }),
+    }),
     highlightSelectionMatches(),
     EditorState.readOnly.of(true),
     keymap.of([
@@ -162,6 +170,7 @@ function createEditor() {
   
   // Enable line wrapping for long content
   extensions.push(EditorView.lineWrapping)
+  extensions.push(editorLayoutTheme)
   
   let content = props.body
   
