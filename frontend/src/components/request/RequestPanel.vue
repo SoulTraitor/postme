@@ -36,12 +36,9 @@
         <!-- Send button -->
         <button
           v-if="!isLoading"
-          @click="sendRequest"
-          class="px-6 py-2 rounded-md font-medium text-white bg-accent hover:bg-accent-hover shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          style="transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s; will-change: transform; backface-visibility: hidden; -webkit-font-smoothing: subpixel-antialiased;"
-          :style="{ transform: activeTab?.url ? 'translateY(0)' : 'translateY(0)' }"
-          @mouseenter="(e) => !activeTab?.url ? null : (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'"
-          @mouseleave="(e) => (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'"
+          ref="sendButton"
+          @click="handleSendClick"
+          class="px-6 py-2 rounded-md font-medium text-white bg-accent hover:bg-accent-hover shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-[background-color,box-shadow] duration-200"
           :disabled="!activeTab?.url"
         >
           <PaperAirplaneIcon class="w-4 h-4" />
@@ -50,10 +47,7 @@
         <button
           v-else
           @click="cancelRequest"
-          class="px-6 py-2 rounded-md font-medium text-white bg-red-500 hover:bg-red-600 shadow-md hover:shadow-lg flex items-center gap-2"
-          style="transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s; will-change: transform; backface-visibility: hidden; -webkit-font-smoothing: subpixel-antialiased;"
-          @mouseenter="(e) => (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'"
-          @mouseleave="(e) => (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'"
+          class="px-6 py-2 rounded-md font-medium text-white bg-red-500 hover:bg-red-600 shadow-md hover:shadow-lg flex items-center gap-2 transition-[background-color,box-shadow] duration-200"
         >
           <XMarkIcon class="w-4 h-4" />
           Cancel
@@ -131,6 +125,7 @@ import { useCollectionStore } from '@/stores/collection'
 import { useHistoryStore } from '@/stores/history'
 import { api } from '@/services/api'
 import { onKeyboardAction } from '@/composables/useKeyboardActions'
+import { useMacTapClick } from '@/composables/useMacTapClick'
 import type { KeyValue } from '@/types'
 import MethodSelect from './MethodSelect.vue'
 import UrlInput from './UrlInput.vue'
@@ -153,6 +148,8 @@ const activeRequestTab = computed({
   set: (value) => { appState.requestPanelTab = value }
 })
 const saveModalOpen = ref(false)
+const sendButton = ref<HTMLButtonElement | null>(null)
+const handleSendClick = useMacTapClick(sendButton, sendRequest)
 
 const isLoading = computed(() => {
   if (!activeTab.value) return false
@@ -249,7 +246,7 @@ function updateBodyType(bodyType: string) {
 }
 
 async function sendRequest() {
-  if (!activeTab.value?.url) return
+  if (!activeTab.value?.url || isLoading.value) return
   
   const tab = activeTab.value
   responseStore.setLoading(tab.id)
